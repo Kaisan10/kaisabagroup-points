@@ -1,0 +1,8 @@
+# 引き換えコード定義ファイル
+# 各コードは一度だけ使用可能です
+
+codes:
+  - code: "CODE"
+    points: 1
+    description: "せつめい"
+    active: true

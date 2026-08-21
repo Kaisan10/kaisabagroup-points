@@ -1,0 +1,10 @@
+node_modules/
+.env
+*.log
+package-lock.json
+redeem_codes.yaml
+shop-api-spec.md
+report.md
+docs/plugin-guide.md
+.agents
+.vscode

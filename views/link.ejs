@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <%- include('partials/_head') %>
+  <style>
+    /* 連携ページ固有のスタイル（common.cssにないもの） */
+    .status {
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .status.linked {
+      background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+      border: 2px solid #28a745;
+    }
+    
+    .status.not-linked {
+      background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+      border: 2px solid #ffc107;
+    }
+    
+    .status-icon {
+      font-size: 42px;
+      flex-shrink: 0;
+    }
+    
+    .status-content {
+      flex: 1;
+    }
+    
+    .status-text {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    
+    .status-description {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .minecraft-id {
+      font-size: 24px;
+      color: var(--color-primary);
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      margin-top: 8px;
+    }
+    
+    .command-display {
+      background: linear-gradient(135deg, #e8f2ff 0%, #d4e7ff 100%);
+      border: 3px solid var(--color-primary);
+      border-radius: 12px;
+      padding: 30px;
+      margin: 30px 0;
+      display: none;
+    }
+    
+    .command-display.active {
+      display: block;
+    }
+    
+    .command-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--color-primary);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .command-box {
+      background: #2d2d2d;
+      color: #00ff00;
+      padding: 18px 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 18px;
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .command-text {
+      flex: 1;
+      word-break: break-all;
+    }
+    
+    .copy-btn {
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .copy-btn:hover {
+      background: var(--color-primary-light);
+      transform: translateY(-2px);
+    }
+    
+    .command-hint {
+      margin-top: 15px;
+      color: var(--color-text-sub);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .status {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .command-box {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .copy-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <%- include('partials/_header') %>
+  
+  <main class="page-container">
+    <div class="card">
+      <h1 class="card__title">
+        <i class="fa-solid fa-link"></i> Minecraft連携
+      </h1>
+      <p class="subtitle" style="margin-bottom: 30px; color: var(--color-text-sub);">
+        マイクラとリンクしてポイントシステムを利用しよう
+      </p>
+      
+      <div id="status-display" class="status not-linked">
+        <div class="status-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="status-content">
+          <div class="status-text">リンクされていません</div>
+          <div class="status-description">マイクラとリンクすると、ゲーム内でポイントを確認・使用できます</div>
+        </div>
+      </div>
+      
+      <div id="linked-status" style="display: none;">
+        <button class="btn btn--danger">
+          <i class="fa-solid fa-link-slash"></i> リンクを解除
+        </button>
+      </div>
+      
+      <div id="not-linked-status">
+        <button id="generate-btn" class="btn btn--primary">
+          <i class="fa-solid fa-link"></i> リンクする
+        </button>
+        
+        <div id="command-display" class="command-display">
+          <div class="command-title">
+            <i class="fa-solid fa-terminal"></i> マイクラで実行するコマンド
+          </div>
+          <div class="command-box">
+            <div class="command-text" id="command-text">/pt link ------</div>
+            <button class="copy-btn">
+              <i class="fa-solid fa-copy"></i> コピー
+            </button>
+          </div>
+          <div class="command-hint">
+            <i class="fa-solid fa-lightbulb"></i> コピーして<a href="/server">対応サーバー</a>のチャットで実行してください
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <script src="/js/common.js"></script>
+  <script src="/js/link.js"></script>
+</body>
+</html>

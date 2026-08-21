@@ -1,0 +1,60 @@
+<div class="page-bg"></div>
+<%- include('_report_modal') %>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <div class="site-logo">
+      <img src="https://cdn.bac0n.f5.si/img/kg.png" style="width:48px;margin:0 16px;" alt="かい鯖グループ">
+      <span class="header-text-hide">かい鯖グループポイント</span>
+    </div>
+    <div class="header-menu">
+      <% if (locals.user) { %>
+        <a href="/dashboard" class="header-item <%= path === '/dashboard' ? 'is-active' : '' %>">
+          <i class="fa-solid fa-house"></i> <span class="header-text-hide">ダッシュボード</span>
+        </a>
+        <a href="/settings" class="header-item <%= path === '/settings' ? 'is-active' : '' %>">
+          <i class="fa-solid fa-user-gear"></i> <span class="header-text-hide">設定</span>
+        </a>
+      <% } %>
+    </div>
+    <nav class="user-menu" id="user-menu">
+      <% if (locals.user) { %>
+        <div class="user-menu__trigger" id="user-menu-trigger">
+          <% if (user.avatar_url) { %>
+            <img src="<%= user.avatar_url %>" class="user-avatar" alt="<%= user.username %>" referrerpolicy="no-referrer">
+            <% } else { %>
+              <i class="fa-solid fa-user"></i>
+            <% } %>
+        </div>
+        <div class="user-menu__dropdown">
+          <button class="menu-item" id="report-btn" type="button">
+            <i class="fa-solid fa-flag"></i> 通報する
+          </button>
+          <a href="/link" class="menu-item">
+            <i class="fa-solid fa-link"></i> Minecraft連携
+          </a>
+          <div class="menu-divider"></div>
+          <a href="/logout" class="menu-item menu-item--danger">
+            <i class="fa-solid fa-right-from-bracket"></i> ログアウト
+          </a>
+        </div>
+      <% } else { %>
+        <a href="/auth/discourse/login" class="btn btn--primary btn--sm">
+          <i class="fa-solid fa-right-to-bracket"></i> ログイン
+        </a>
+      <% } %>
+    </nav>
+  </div>
+</header>
+
+<!-- 共通確認モーダル -->
+<div id="confirm-modal" class="modal-backdrop">
+  <div class="modal-box" style="max-width: 400px;">
+    <div id="confirm-modal-title" class="modal__title"></div>
+    <div id="confirm-modal-body" class="notice-banner__body" style="border:none;background:none;padding:0;margin-bottom:24px;"></div>
+    <div class="modal__actions">
+      <button id="confirm-modal-cancel" class="btn btn--ghost">キャンセル</button>
+      <button id="confirm-modal-ok" class="btn btn--primary">OK</button>
+    </div>
+  </div>
+</div>

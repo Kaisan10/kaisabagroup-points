@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <%- include('partials/_head', { title: '管理者ダッシュボード', description: '停止済みユーザー管理および通報管理を行います。' }) %>
+    <style>
+        .admin-section { margin-bottom: 3rem; }
+        .admin-section h2 { margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; font-size: 20px; }
+        
+        /* 停止ユーザーテーブル */
+        .suspended-table { width: 100%; border-collapse: collapse; }
+        .suspended-table th, .suspended-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--color-border); }
+        .suspended-table th { background: #fafafa; font-weight: 600; }
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .user-avatar-sm { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+
+        /* 通報テーブル */
+        .reports-table { width: 100%; border-collapse: collapse; }
+        .reports-table th, .reports-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--color-border); font-size: 14px; }
+        .reports-table th { background: #fafafa; font-weight: 600; }
+        .reports-table tr.dismissed { opacity: 0.6; background: #f9f9f9; }
+        .description-cell { max-width: 400px; white-space: pre-wrap; word-break: break-all; }
+        .count-badge { background: var(--color-danger); color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <%- include('partials/_header', { user: user, currentPage: 'admin' }) %>
+
+    <main class="page-container">
+        <div class="card title">
+            <h1><i class="fa-solid fa-gauge-high"></i> 管理者ダッシュボード</h1>
+            <p class="user-info">アカウント停止の管理と通報の処理を一括で行います。</p>
+        </div>
+
+        <!-- 停止中ユーザー一覧 -->
+        <section class="admin-section">
+            <h2><i class="fa-solid fa-user-slash text-danger"></i> 停止中のアカウント</h2>
+            <div class="card" style="padding: 0;">
+                <div class="table-wrapper">
+                    <table class="suspended-table">
+                        <thead>
+                            <tr>
+                                <th>ユーザー</th>
+                                <th>最終ログイン</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suspended-tbody">
+                            <tr><td colspan="3" class="empty-state">読み込み中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 通報一覧 -->
+        <section class="admin-section">
+            <h2><i class="fa-solid fa-flag text-warning"></i> 通報一覧 (最新30件)</h2>
+            <div class="card" style="padding: 0;">
+                <div class="table-wrapper">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th>報告者</th>
+                                <th>カテゴリ</th>
+                                <th>内容</th>
+                                <th>日時</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reports-tbody">
+                            <tr><td colspan="5" class="empty-state">読み込み中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="padding: 15px; text-align: center; color: var(--color-text-muted); font-size: 12px;">
+                    ※古い通報や処理済みの通報は順次非表示になります。
+                </div>
+            </div>
+        <!-- サービス一覧 -->
+        <section class="admin-section">
+            <h2><i class="fa-solid fa-server text-info"></i> サービス（API）一覧</h2>
+            <div class="card" style="padding: 0;">
+                <div class="table-wrapper">
+                    <table class="reports-table" id="services-table">
+                        <thead>
+                            <tr>
+                                <th>サービス名 / オーナー</th>
+                                <th>状態 / プレフィクス</th>
+                                <th>信頼モード設定</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-tbody">
+                            <tr><td colspan="4" class="empty-state">読み込み中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/admin-ui.js"></script>
+</body>
+</html>

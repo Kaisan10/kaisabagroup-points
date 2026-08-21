@@ -1,0 +1,64 @@
+<%- include('partials/_head', { title: 'ギフトの受け取り', description: 'ギフトコードを受け取ってポイントを獲得しましょう。' }) %>
+</head>
+<body class="theme-light">
+  <div class="site-wrapper">
+    <%- include('partials/_header', { user: user }) %>
+
+    <main class="page-container" style="max-width: 600px; min-height: calc(100vh - var(--header-height) - 80px); display: flex; align-items: center; justify-content: center; margin-top: calc(var(--header-height) + 40px);">
+      <div class="card" style="width: 100%; text-align: center; padding: 40px 20px; box-sizing: border-box;">
+        
+        <div id="loading-area">
+          <i class="fa-solid fa-spinner fa-spin" style="font-size: 40px; color: var(--color-primary);"></i>
+          <p class="text-sub mt-16">ギフト情報を読み込んでいます...</p>
+        </div>
+
+        <div id="error-area" style="display: none;">
+          <i class="fa-solid fa-circle-exclamation" style="font-size: 48px; color: var(--color-danger); margin-bottom: 20px;"></i>
+          <h2 class="card__title text-center" id="error-title">エラー</h2>
+          <p class="text-sub" id="error-message">ギフトコードが見つからないか、既に使用されています。</p>
+          <a href="/dashboard" class="btn btn--outline mt-16">ダッシュボードへ戻る</a>
+        </div>
+
+        <div id="gift-area" style="display: none;">
+          <div class="gift-icon-wrap" style="font-size: 64px; color: var(--color-primary); margin-bottom: 16px;">
+            <i class="fa-solid fa-gift"></i>
+          </div>
+          
+          <h1 style="font-size: 24px; margin-bottom: 8px;">ギフトが届いています！</h1>
+          
+          <div style="background: #f0f7ff; border: 2px solid #91d5ff; border-radius: var(--radius-md); padding: 20px; margin: 24px 0;">
+            <div style="font-size: 14px; color: #096dd9; font-weight: bold; margin-bottom: 8px;">
+              <i class="fa-solid fa-user"></i> <span id="gift-sender"></span> さんから
+            </div>
+            <div id="gift-title" style="font-size: 20px; font-weight: 700; color: var(--color-text); margin-bottom: 16px;"></div>
+            <div style="font-size: 36px; font-weight: 800; color: var(--color-primary); line-height: 1;">
+              <span id="gift-points"></span> <span style="font-size: 16px;">pt</span>
+            </div>
+          </div>
+
+          <form id="gift-redeem-form">
+            <button type="submit" class="btn btn--primary" id="gift-redeem-btn" style="width: 100%; padding: 14px; font-size: 18px;">
+              <i class="fa-solid fa-envelope-open-text"></i> ギフトを受け取る
+            </button>
+          </form>
+          
+          <div id="gift-message-area" style="display: none; margin-top: 24px; text-align: left; background: #f9f9f9; padding: 16px; border-radius: var(--radius-sm); border-left: 4px solid var(--color-primary);">
+            <div style="font-size: 12px; color: var(--color-text-sub); margin-bottom: 4px;">メッセージ</div>
+            <div id="gift-memo" style="font-size: 15px; color: var(--color-text); line-height: 1.5; white-space: pre-wrap;"></div>
+          </div>
+
+          <div id="success-actions" style="display: none; margin-top: 24px;">
+            <div class="alert alert--success is-visible mb-16">
+              ギフトを受け取りました！
+            </div>
+            <a href="/dashboard" class="btn btn--outline" style="width: 100%;">ダッシュボードへ戻る</a>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/gift.js" defer></script>
+</body>
+</html>

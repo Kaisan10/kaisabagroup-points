@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <%- include('partials/_head', { title: 'アプリの連携', description: '外部アプリとの連携を許可しますか？' }) %>
+</head>
+<body>
+  <!-- ヘッダーは最小限か表示しなくてもよいが、統一感のため表示 -->
+  <%- include('partials/_header', { user: user, currentPage: 'oauth' }) %>
+
+  <main class="page-container" style="max-width: 500px; margin-top: 40px;">
+    <div class="card" style="text-align: center;">
+      <!-- アプリとユーザーのアイコンを並べるなどすると良い -->
+      <div style="font-size: 3rem; margin-bottom: 16px;">
+        <i class="fa-solid fa-link text-primary"></i>
+      </div>
+      
+      <h1 class="card__title" style="font-size: 1.5rem; margin-bottom: 8px;">
+        <strong><%= app.name %></strong> と連携しますか？
+      </h1>
+      
+      <p class="text-sub mb-24">
+        このアプリは以下の権限を要求しています。許可すると、このアプリはあなたのアカウントに対して指定された操作を行えるようになります。
+      </p>
+
+      <!-- 要求スコープのリスト -->
+      <div style="text-align: left; background: var(--color-bg); padding: 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid var(--color-border);">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          <% scopeDescs.forEach(function(s) { %>
+            <li style="margin-bottom: 12px; display: flex; align-items: flex-start; gap: 12px;">
+              <i class="fa-solid <%= s.icon %> text-primary" style="margin-top: 4px;"></i>
+              <div>
+                <strong style="display: block; margin-bottom: 4px;"><%= s.label %></strong>
+                <span class="text-sub" style="font-size: 0.9em;"><%= s.description %></span>
+              </div>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+
+      <div class="alert alert--info mb-24" style="text-align: left; font-size: 0.9em;">
+        <i class="fa-solid fa-circle-info"></i>
+        この許可は後から「設定」画面でいつでも取り消すことができます。
+      </div>
+
+      <!-- 同意フォーム -->
+      <form action="/oauth/authorize" method="POST" style="display: flex; gap: 12px; justify-content: center;">
+        <input type="hidden" name="client_id" value="<%= clientId %>">
+        <input type="hidden" name="redirect_uri" value="<%= redirectUri %>">
+        <input type="hidden" name="scope" value="<%= scope %>">
+        <input type="hidden" name="state" value="<%= state %>">
+        
+        <button type="submit" name="action" value="deny" class="btn btn--ghost" style="flex: 1;">
+          キャンセル
+        </button>
+        <button type="submit" name="action" value="allow" class="btn btn--primary" style="flex: 1;">
+          許可する
+        </button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <%- include('partials/_head', { title: 'ダッシュボード' , description: 'かい鯖グループポイントのダッシュボード。ポイント残高や履歴の閲覧ができます。' }) %>
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+
+<body>
+
+  <%- include('partials/_header', { user: user, currentPage: 'dashboard' }) %>
+
+    <main class="page-container">
+
+      <!-- 承認待ちバナー -->
+      <div id="pending-banner" class="notice-banner" style="display:none;">
+        <p class="notice-banner__title">
+          <i class="fa-solid fa-bell"></i> 購入承認のリクエストがあります
+        </p>
+        <div class="notice-banner__body">
+          <strong id="pending-server-name"></strong> から
+          「<strong id="pending-item-name"></strong>」の購入リクエスト
+          （<strong id="pending-amount"></strong>）が届いています。
+        </div>
+        <div class="notice-banner__actions">
+          <button class="btn btn--primary" id="pending-approve-btn">
+            <i class="fa-solid fa-check"></i> 承認する
+          </button>
+          <button class="btn btn--ghost" id="pending-reject-btn">
+            <i class="fa-solid fa-xmark"></i> 断る
+          </button>
+        </div>
+      </div>
+
+      <!-- サブスク承認待ちバナー -->
+      <div id="sub-pending-banner" class="notice-banner" style="display:none;border-color:#d3adf7;background:linear-gradient(135deg,#f9f0ff,#f0f8ff);">
+        <p class="notice-banner__title" style="color:#531dab;">
+          <i class="fa-solid fa-rotate"></i> サブスクリプションの承認リクエスト
+        </p>
+        <div class="notice-banner__body" id="sub-pending-body"></div>
+        <div class="notice-banner__actions">
+          <button class="btn btn--primary" id="sub-approve-btn">
+            <i class="fa-solid fa-check"></i> 同意して開始する
+          </button>
+          <button class="btn btn--ghost" id="sub-reject-btn">
+            <i class="fa-solid fa-xmark"></i> キャンセル
+          </button>
+        </div>
+      </div>
+
+      <% if (user.is_suspended) { %>
+        <div class="notice-banner notice-banner--danger" style="display: block; margin-bottom: 24px;">
+          <div class="notice-banner__body">
+            <div class="notice-banner__content">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <strong>アカウントが一時停止されています</strong><br>
+              規約違反の疑いにより、現在あなたのアカウントは一部の機能が制限されています。<br>
+              解除を希望される場合は、<a href="<%= discourseUrl %>/" target="_blank"
+                style="color: inherit; text-decoration: underline;">フォーラム</a> の <strong>bac0n</strong> までDMでご連絡ください。<br>
+              心当たりがある場合は反省をしてください。
+            </div>
+          </div>
+        </div>
+        <% } %>
+
+          <!-- ウェルカムカード -->
+          <div class="card welcome-card title">
+            <h1 id="welcome-message">ようこそ、<%= user.username %>さん！</h1>
+            <p class="user-info">かい鯖グループポイントアプリへようこそ。</p>
+          </div>
+
+          <!-- スタットグリッド -->
+          <div class="stats-grid">
+            <div class="card stat-card">
+              <div class="stat-icon"><i class="fa-solid fa-coins"></i></div>
+              <div class="stat-value" id="total-points">—</div>
+              <div class="stat-label">総ポイント</div>
+            </div>
+
+            <!-- ランキング順位カード -->
+            <div class="card stat-card" id="ranking-card">
+
+              <!-- ヘッダー行：タイトル・自分の順位・拡大ボタン -->
+              <div class="flex-between mb-16">
+                <h2 class="card__title-sm" style="margin-bottom:0;">
+                  <i class="fa-solid fa-trophy"></i> ランキング
+                  <span class="text-muted" style="font-size:14px;font-weight:400;margin-left:8px;">あなた：<strong
+                      id="my-rank" style="color:var(--color-primary);">—</strong></span>
+                </h2>
+                <button class="btn btn--ghost btn--sm" id="ranking-expand-btn" aria-expanded="false">
+                  <i class="fa-solid fa-expand"></i>
+                </button>
+              </div>
+
+              <!-- ランキングリスト（1つだけ。中身はJSが差し替える） -->
+              <div id="ranking-list">
+                <div class="empty-state">
+                  <i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...
+                </div>
+              </div>
+
+              <!-- ページネーション（拡大時のみ表示） -->
+              <div id="ranking-pagination" style="display:none;" class="mt-16">
+                <div class="flex-between gap-8 flex-wrap">
+                  <div class="flex gap-8 flex-wrap" style="align-items:center;">
+                    <button class="btn btn--ghost btn--sm" id="ranking-prev-btn" disabled>
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button class="btn btn--ghost btn--sm" id="ranking-next-btn">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  </div>
+                  <div class="flex gap-8 flex-wrap" style="align-items:center;">
+                    <button class="btn btn--ghost btn--sm ranking-page-size-btn" data-size="10">
+                      <span>10</span>
+                    </button>
+                    <button class="btn btn--ghost btn--sm ranking-page-size-btn" data-size="30">
+                      <span>30</span>
+                    </button>
+                    <button class="btn btn--ghost btn--sm ranking-page-size-btn" data-size="100">
+                      <span>100</span>
+                    </button>
+                  </div>
+                </div>
+                <p class="text-sub mt-16" style="font-size:12px;">
+                  <i class="fa-solid fa-circle-info"></i>
+                  ランキングへの参加は<a href="/settings#account" style="color:var(--color-primary);">設定</a>から変更できます。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- マインクラフト連携・コード引き換え -->
+          <!-- #action-grid は未連携時にJSが two-col-grid クラスを付与して2列化する -->
+          <div id="action-grid">
+
+            <!-- マインクラフト連携（未連携時のみ表示） -->
+            <div class="card" id="minecraft-link-card" style="display:none;">
+              <h2 class="card__title"><i class="fa-solid fa-gamepad"></i> マインクラフト連携</h2>
+              <p class="text-sub mb-16">マイクラIDをリンクして、ゲーム内でポイントを使おう！</p>
+              <a href="/link" class="btn btn--primary">
+                <i class="fa-solid fa-link"></i> マイクラ連携設定
+              </a>
+            </div>
+
+            <!-- ギフト -->
+            <div class="card" id="gift-card">
+              <h2 class="card__title"><i class="fa-solid fa-gift"></i> ギフト</h2>
+
+              <!-- タブ -->
+              <div class="tab-bar" role="tablist" aria-label="ギフトメニュー">
+                <button class="tab-btn is-active" role="tab" id="tab-redeem" aria-controls="tab-panel-redeem" aria-selected="true">
+                  <i class="fa-solid fa-ticket"></i> コードを引き換える
+                </button>
+                <button class="tab-btn" role="tab" id="tab-create" aria-controls="tab-panel-create" aria-selected="false">
+                  <i class="fa-solid fa-paper-plane"></i> ギフトを作成する
+                </button>
+              </div>
+
+              <!-- 引き換えパネル -->
+              <div class="tab-panel" id="tab-panel-redeem" role="tabpanel" aria-labelledby="tab-redeem">
+                <p class="text-sub mb-16" style="margin-top:16px;">引き換えコードを入力してポイントを獲得しましょう！</p>
+                <form class="redeem-form" id="redeem-form">
+                  <div class="redeem-input-wrapper">
+                    <input type="text" id="redeem-code-input" class="redeem-input" placeholder="コードを入力"
+                      maxlength="50" autocomplete="off" spellcheck="false" required>
+                  </div>
+                  <button type="submit" class="btn btn--primary" id="redeem-btn">
+                    <i class="fa-solid fa-gift"></i> 引き換え
+                  </button>
+                </form>
+                <!-- 送り主情報（ギフトコードの場合のみ表示） -->
+                <div class="gift-sender-info" id="gift-sender-info" style="display:none; flex-direction: column; align-items: stretch; background: #f0f7ff; border: 2px solid #91d5ff; padding: 20px; border-radius: var(--radius-card); margin-top: 20px;">
+                  <div style="font-size: 14px; color: #096dd9; font-weight: bold; margin-bottom: 8px;">
+                    <i class="fa-solid fa-user"></i> <span id="gift-sender-name"></span> さんからのギフト
+                  </div>
+                  <div id="gift-sender-title" style="font-size: 20px; font-weight: 700; color: var(--color-text); margin-bottom: 12px;"></div>
+                  
+                  <div id="gift-sender-memo-container" style="display: none; background: #fff; padding: 12px; border-radius: var(--radius-sm); border-left: 4px solid var(--color-primary); margin-bottom: 8px;">
+                    <div style="font-size: 11px; color: var(--color-text-sub); margin-bottom: 4px;">メッセージ</div>
+                    <div id="gift-sender-memo" style="font-size: 14px; color: var(--color-text); white-space: pre-wrap; line-height: 1.5;"></div>
+                  </div>
+                </div>
+                <div class="alert mt-16" id="redeem-message"></div>
+              </div>
+
+              <!-- 作成パネル -->
+              <div class="tab-panel" id="tab-panel-create" role="tabpanel" aria-labelledby="tab-create" style="display:none;">
+                <p class="text-sub mb-16" style="margin-top:16px;">ポイントをギフトコードに変換して送れます。</p>
+                <form id="gift-create-form">
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label" for="gift-points-input">ポイント数 <span style="color:var(--color-danger)">*</span></label>
+                      <input type="number" id="gift-points-input" class="form-input" min="1" step="1"
+                        placeholder="例: 100" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="gift-title-input">タイトル（履歴に表示） <span style="color:var(--color-danger)">*</span></label>
+                      <input type="text" id="gift-title-input" class="form-input" maxlength="10"
+                        placeholder="例: ありがとう！" required autocomplete="off">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="gift-memo-input">メモ（任意・50文字まで）</label>
+                    <textarea id="gift-memo-input" class="form-input form-input--box" maxlength="50"
+                      placeholder="受取人へのメッセージ" autocomplete="off" rows="2"></textarea>
+                    <div class="form-hint"><span id="gift-memo-count">0</span>/50</div>
+                  </div>
+                  <button type="submit" class="btn btn--primary" id="gift-create-btn">
+                    <i class="fa-solid fa-paper-plane"></i> ギフトコードを作成
+                  </button>
+                </form>
+
+                <div class="alert mt-16" id="gift-create-message"></div>
+
+                <!-- 生成されたコード表示 -->
+                <div class="gift-code-result" id="gift-code-result" style="display:none;">
+                  <p class="text-sub" style="margin-bottom:8px;">ギフトコードが生成されました。受取人に渡してください。</p>
+                  <div class="gift-code-box">
+                    <code id="gift-code-value"></code>
+                    <button class="btn btn--ghost btn--sm" id="gift-code-copy-btn" type="button" title="コードをコピー">
+                      <i class="fa-solid fa-copy"></i>
+                    </button>
+                  </div>
+                  
+                  <button type="button" class="btn btn--primary mt-16" id="gift-share-btn" style="width: 100%;">
+                    <i class="fa-solid fa-share-nodes"></i> 共有URLを発行する
+                  </button>
+
+                  <p class="text-muted" style="margin-top:12px;font-size:12px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    コードやURLは安全な方法で相手に渡してください。このコードは一度しか使用できません。
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- 共有モーダル -->
+            <div class="modal-backdrop" id="gift-share-modal">
+              <div class="modal-box" style="max-width: 480px;">
+                <div class="modal__title">
+                  <i class="fa-solid fa-share-nodes"></i> ギフトを共有
+                  <button type="button" class="modal__close" id="gift-share-modal-close" aria-label="閉じる">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <div class="modal__content">
+                  <p class="text-sub mb-16">以下のURLを受取人に送ってください。</p>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="gift-share-url" class="form-input" readonly style="flex: 1; font-family: monospace; font-size: 14px;">
+                    <button type="button" class="btn btn--primary" id="gift-share-copy-btn">
+                      <i class="fa-solid fa-copy"></i> コピー
+                    </button>
+                  </div>
+                  <div class="alert mt-16" id="gift-share-message" style="display: none;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ギフト作成確認モーダル -->
+            <div class="modal-backdrop" id="gift-confirm-modal">
+              <div class="modal-box" style="max-width: 480px;">
+                <div class="modal__title">
+                  <i class="fa-solid fa-circle-question"></i> ギフト作成の確認
+                  <button type="button" class="modal__close" id="gift-confirm-modal-close" aria-label="閉じる">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <div class="modal__content">
+                  <p class="text-sub mb-16">以下の内容でギフトコードを作成します。よろしいですか？</p>
+                  <ul class="info-list" style="margin-bottom: 20px;">
+                    <li>
+                      <div class="info-text">
+                        <strong>消費ポイント</strong>
+                        <span id="gift-confirm-points" style="font-size: 24px; font-weight: 700; color: var(--color-primary);"></span> pt
+                      </div>
+                    </li>
+                    <li style="padding: 10px 20px;">
+                      <div class="info-text">
+                        <strong>タイトル</strong>
+                        <span id="gift-confirm-title" style="color: var(--color-text);"></span>
+                      </div>
+                    </li>
+                    <li style="padding: 10px 20px;">
+                      <div class="info-text">
+                        <strong>メモ</strong>
+                        <span id="gift-confirm-memo" style="color: var(--color-text); white-space: pre-wrap;"></span>
+                      </div>
+                    </li>
+                  </ul>
+                  <p class="text-muted" style="font-size: 13px; margin-bottom: 20px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    作成を完了すると、あなたのアカウントから即座にポイントが引かれます。この操作は取り消せません。
+                  </p>
+                  <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn--outline" id="gift-confirm-cancel-btn" style="flex: 1;">キャンセル</button>
+                    <button type="button" class="btn btn--primary" id="gift-confirm-submit-btn" style="flex: 1;">作成する</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /#action-grid -->
+
+          <!-- サブスクリプション管理 -->
+          <div class="card" id="subscriptions-card">
+            <h2 class="card__title"><i class="fa-solid fa-rotate"></i> サブスクリプション</h2>
+            <div id="subscriptions-list">
+              <div class="empty-state">
+                <i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...
+              </div>
+            </div>
+          </div>
+
+          <!-- ポイント履歴 -->
+          <div class="card">
+            <h2 class="card__title"><i class="fa-solid fa-clock-rotate-left"></i> ポイント履歴</h2>
+            <div class="data-table-wrapper">
+              <table class="data-table" id="history-table">
+                <thead>
+                  <tr>
+                    <th>日時</th>
+                    <th>ポイント</th>
+                    <th>内容</th>
+                  </tr>
+                </thead>
+                <tbody id="history-tbody">
+                  <tr>
+                    <td colspan="3" class="empty-state">
+                      <i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="load-more-container" id="load-more-container" style="display:none;"></div>
+          </div>
+
+          <!-- ポイントの貯め方（アコーディオン） -->
+          <div class="card accordion" id="howto-accordion">
+            <button class="accordion__trigger card__title" id="howto-trigger" type="button" aria-expanded="false" aria-controls="howto-body">
+              <span style="display:flex;align-items:center;gap:10px;">
+                <i class="fa-solid fa-lightbulb" style="color:var(--color-primary);"></i> ポイントの貯め方
+              </span>
+              <i class="fa-solid fa-chevron-down accordion__icon"></i>
+            </button>
+            <div class="accordion__body" id="howto-body" aria-hidden="true">
+              <ul class="info-list" style="margin-top:16px;">
+                <li>
+                  <span class="info-icon-box"><i class="fa-solid fa-pen-to-square"></i></span>
+                  <div class="info-text">
+                    <strong>トピック作成</strong>
+                    <small>フォーラムで新しいトピックを作成すると10ポイント獲得（一日一回のみ）</small>
+                  </div>
+                </li>
+                <li>
+                  <span class="info-icon-box"><i class="fa-solid fa-comments"></i></span>
+                  <div class="info-text">
+                    <strong>返信投稿</strong>
+                    <small>トピックに返信すると5ポイント獲得（3時間に一回のみ）</small>
+                  </div>
+                </li>
+                <li>
+                  <span class="info-icon-box"><i class="fa-solid fa-gift"></i></span>
+                  <div class="info-text">
+                    <strong>マイクラ連携</strong>
+                    <small>マイクラと連携してゲーム内特典を獲得（一部実装済み）</small>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+    </main>
+
+    <script src="/js/common.js"></script>
+    <script src="/js/dashboard.js"></script>
+</body>
+
+</html>

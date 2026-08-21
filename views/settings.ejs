@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <%- include('partials/_head', { title: '設定', description: 'サービスアカウント運営者向けの設定。承認待ち取引の管理・商品の追加や編集ができます。' }) %>
+</head>
+<body>
+
+  <%- include('partials/_header', { user: user, currentPage: 'settings' }) %>
+
+  <main class="page-container">
+
+    <!-- ページタイトル -->
+    <div class="card title">
+      <h1 class="card__title">
+        <i class="fa-solid fa-user-gear"></i> 設定
+      </h1>
+      <p class="text-sub">アカウントなどの設定ができます。</p>
+    </div>
+
+    <!-- タブレイアウト（左サイドバー＋右コンテンツ） -->
+    <div class="tabs-layout">
+
+      <!-- 左: タブリスト -->
+      <nav class="tabs" id="settings-tabs" role="tablist" aria-label="設定タブ">
+        <button class="tab__btn is-active" id="tab-btn-account"
+                role="tab" aria-selected="true" aria-controls="tab-account" data-tab="account">
+          <i class="fa-solid fa-user"></i> アカウント
+        </button>
+        <button class="tab__btn" id="tab-btn-server"
+                role="tab" aria-selected="false" aria-controls="tab-server" data-tab="server">
+          <i class="fa-solid fa-server"></i> サービス
+        </button>
+        <button class="tab__btn" id="tab-btn-trusted"
+                role="tab" aria-selected="false" aria-controls="tab-trusted" data-tab="trusted">
+          <i class="fa-solid fa-shield-halved"></i> 信頼
+        </button>
+      </nav>
+
+      <!-- 右: タブコンテンツ -->
+      <div class="tabs-content">
+
+      <!-- ═════ タブパネル: アカウント ═════ -->
+      <div class="tab__panel is-active" id="tab-account" role="tabpanel" aria-labelledby="tab-btn-account">
+
+      <!-- ─── ランキング設定 ──────────────────────────────────────── -->
+      <section class="card" id="section-ranking">
+        <h2 class="card__title">
+          <i class="fa-solid fa-trophy"></i> ランキング
+        </h2>
+        <p class="text-sub mb-16">
+          ランキングに参加すると、ダッシュボードのランキングにあなたのポイントが表示されます。<br>
+          参加しない場合、あなたのデータはランキングに一切表示されません。
+        </p>
+
+        <!-- トグルスイッチ -->
+        <label class="toggle-switch" id="ranking-toggle-label">
+          <input type="checkbox" id="ranking-toggle">
+          <span class="toggle-switch__track"></span>
+          <span class="toggle-switch__label">ランキングに参加する</span>
+        </label>
+        <div class="alert mt-16" id="ranking-toggle-msg"></div>
+      </section>
+
+      <!-- ─── 連携中のアプリ ─────────────────────────────────────── -->
+      <section class="card" id="section-authorized-apps">
+        <h2 class="card__title">
+          <i class="fa-solid fa-link"></i> 連携中のアプリ
+        </h2>
+        <p class="text-sub mb-16">
+          あなたの代わりにポイントの取引等を行うことを許可したアプリの一覧です。
+        </p>
+
+        <div id="authorized-apps-list">
+          <div class="empty-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            読み込み中...
+          </div>
+        </div>
+      </section>
+
+      <!-- ── ブラウザ通知設定 ─────────────────────────────────────── -->
+      <section class="card" id="section-notifications">
+        <h2 class="card__title">
+          <i class="fa-solid fa-bell"></i> 通知設定
+        </h2>
+        <p class="text-sub mb-16">
+          購入承認リクエストが届いたとき、ブラウザ通知を受け取れます。<br>
+        </p>
+
+        <!-- 通知が未許可の場合に表示 -->
+        <div id="notif-permission-warn" style="display:none;margin-bottom:14px;">
+          <button class="btn btn--primary btn--sm mt-8" id="request-notif-btn" type="button">
+            <i class="fa-solid fa-bell"></i> 通知を許可する
+          </button>
+        </div>
+
+        <!-- トグルスイッチ -->
+        <label class="toggle-switch" id="notif-toggle-label">
+          <input type="checkbox" id="notif-toggle">
+          <span class="toggle-switch__track"></span>
+          <span class="toggle-switch__label">ダッシュボードでブラウザ通知を受け取る</span>
+        </label>
+      </section>
+
+        </div><!-- /tab-account -->
+
+        <!-- ═════ タブパネル: サービスアカウント ═════ -->
+        <div class="tab__panel" id="tab-server" role="tabpanel" aria-labelledby="tab-btn-server">
+
+      <!-- ─── 自分のサービスアカウント ──────────────────────────── -->
+      <section class="card" id="section-servers">
+        <div class="flex-between mb-16">
+          <h2 class="card__title" style="margin-bottom:0;">
+            <i class="fa-solid fa-server"></i> サービスアカウント
+          </h2>
+          <button class="btn btn--primary btn--sm" id="create-service-account-btn">
+            <i class="fa-solid fa-plus"></i> 作成
+          </button>
+        </div>
+        <div id="servers-list">
+          <div class="empty-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            読み込み中...
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 承認待ち取引 ──────────────────────────────────────── -->
+      <section class="card" id="section-pending" style="display:none;">
+        <div class="flex-between mb-16">
+          <h2 class="card__title" style="margin-bottom:0;">
+            <i class="fa-solid fa-clock"></i> 承認待ち取引
+          </h2>
+          <button class="btn btn--ghost btn--sm" id="refresh-pending-btn">
+            <i class="fa-solid fa-rotate-right"></i> 更新
+          </button>
+        </div>
+        <div id="pending-list">
+          <div class="empty-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            読み込み中...
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── 商品管理 ──────────────────────────────────────────── -->
+      <section class="card" id="section-products" style="display:none;">
+        <div class="flex-between mb-16">
+          <h2 class="card__title" style="margin-bottom:0;">
+            <i class="fa-solid fa-box"></i> 商品管理
+          </h2>
+          <select class="form-input" id="product-server-select"
+                  style="width:auto;border-radius:8px;padding:6px 12px;"></select>
+        </div>
+
+        <!-- 商品追加フォーム -->
+        <div class="card"
+             style="background:#f9fcff;box-shadow:none;border:1px solid var(--color-border);padding:1.25em;margin-bottom:16px;">
+          <p class="text-bold mb-8"><i class="fa-solid fa-plus text-primary"></i> 商品を追加</p>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="product-name">商品名</label>
+              <input type="text" id="product-name" class="form-input"
+                     placeholder="例: ダイヤモンド" maxlength="200">
+            </div>
+            <div class="form-group" style="max-width:140px;">
+              <label class="form-label" for="product-price">価格 (pt)</label>
+              <input type="number" id="product-price" class="form-input"
+                     placeholder="100" min="1" max="1000000">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="product-desc">説明（任意）</label>
+              <input type="text" id="product-desc" class="form-input"
+                     placeholder="説明" maxlength="500">
+            </div>
+            <div class="form-group" style="max-width:120px;display:flex;align-items:flex-end;">
+              <button class="btn btn--primary" id="add-product-btn" style="width:100%;">
+                <i class="fa-solid fa-plus"></i> 追加
+              </button>
+            </div>
+          </div>
+          <div id="add-product-msg" class="alert"></div>
+        </div>
+
+        <!-- 商品一覧テーブル -->
+        <div class="table-wrapper">
+          <table class="table" id="products-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>商品名</th>
+                <th>価格</th>
+                <th>説明</th>
+                <th>状態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody">
+              <tr><td colspan="6" class="empty-state">読み込み中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+        </div><!-- /tab-server -->
+
+        <!-- ═════ タブパネル: 信頼サービス ═════ -->
+        <div class="tab__panel" id="tab-trusted" role="tabpanel" aria-labelledby="tab-btn-trusted">
+
+      <!-- ─── 信頼サービスの設定 ──────────────────────────────────── -->
+      <section class="card" id="section-trusted-servers">
+        <div class="flex-between mb-16">
+          <h2 class="card__title" style="margin-bottom:0;">
+            <i class="fa-solid fa-shield-halved text-info"></i> 信頼サービスの設定
+          </h2>
+          <button class="btn btn--ghost btn--sm" id="trusted-help-btn" type="button" title="詳細を見る">
+            <i class="fa-solid fa-circle-question"></i>
+          </button>
+        </div>
+        <p class="text-sub mb-16">
+          システムで「信頼モード」に設定されているサービスの一覧です。<br>
+          各サービスごとに自動承認と操作許可を個別に設定できます。
+        </p>
+
+        <!-- 信頼サーバー個別一覧 -->
+        <div id="trusted-servers-list">
+          <div class="empty-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            読み込み中...
+          </div>
+        </div>
+      </section>
+
+        </div><!-- /tab-trusted -->
+
+      </div><!-- /.tabs-content -->
+    </div><!-- /.tabs-layout -->
+
+    <!-- ─── サービスアカウント作成モーダル ────────────────────────── -->
+    <div class="modal-backdrop" id="create-sa-modal">
+      <div class="modal-box" style="max-width: 400px;">
+        <h3 class="modal__title">サービスアカウント作成</h3>
+        <p class="text-sub mb-16">
+          サービスアカウントの名前を入力してください。1人1つまで作成可能です。<br>
+          <small class="text-muted">※5文字以上の半角英数字と記号のみ使用可能（スペース不可）</small>
+        </p>
+        <div class="form-group">
+          <label class="form-label" for="sa-name-input">名前</label>
+          <input type="text" id="sa-name-input" class="form-input" placeholder="例: My-Server_01" maxlength="100">
+        </div>
+        <div id="create-sa-msg" class="alert"></div>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="create-sa-cancel">キャンセル</button>
+          <button class="btn btn--primary" id="create-sa-submit">完了</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── APIキー表示モーダル ────────────────────────── -->
+    <div class="modal-backdrop" id="apikey-sa-modal">
+      <div class="modal-box" style="max-width: 500px;">
+        <h3 class="modal__title text-success"><i class="fa-solid fa-check-circle"></i> 作成完了</h3>
+        <p class="text-sub mb-16">以下のAPIキーを使ってサービスで利用できます。<strong>※誰にも共有しないでください！<br>この画面を閉じると二度と表示されません！</strong></p>
+        <div class="form-group">
+          <input type="text" id="sa-apikey-display" class="form-input" readonly style="font-family: monospace; font-size: 1.1em; text-align: center;">
+        </div>
+        <div class="modal__actions">  
+          <button class="btn btn--primary" id="apikey-sa-close">確認しました (閉じる)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── OAuth設定編集モーダル ────────────────────────── -->
+    <div class="modal-backdrop" id="edit-oauth-modal">
+      <div class="modal-box" style="max-width: 480px;">
+        <h3 class="modal__title"><i class="fa-solid fa-link"></i> OAuth設定</h3>
+        
+        <div style="background:#f4f6f8; padding:12px; border-radius:8px; margin-bottom:16px; font-size:13px; line-height:1.5;">
+          <p class="text-bold mb-4" style="color:var(--color-primary);">OAuth 接続情報</p>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span class="text-sub">Client ID:</span>
+            <code id="oauth-client-id-display" class="copyable-text" data-copy-type="id" style="cursor:pointer; padding:2px 6px; border:1px solid #ccc; border-radius:4px; transition:background 0.2s;" title="クリックでコピー"></code>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span class="text-sub">Client Secret:</span>
+            <span class="text-muted">あなたの API キー</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <span class="text-sub">認可URL:</span>
+            <code class="copyable-text" data-copy-type="url" data-copy-value="/oauth/authorize" style="cursor:pointer; padding:2px 6px; border:1px solid #ccc; border-radius:4px; transition:background 0.2s;" title="クリックでコピー">/oauth/authorize</code>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span class="text-sub">トークンURL:</span>
+            <code class="copyable-text" data-copy-type="url" data-copy-value="/api/oauth/token" style="cursor:pointer; padding:2px 6px; border:1px solid #ccc; border-radius:4px; transition:background 0.2s;" title="クリックでコピー">/api/oauth/token</code>
+          </div>
+        </div>
+
+        <p class="text-sub mb-16">
+          このサービスアカウントをOAuthプロバイダーとして利用する場合、許可するコールバックURL (redirect_uri) を登録してください。改行区切りで複数登録できます。
+        </p>
+        <div class="form-group">
+          <label class="form-label" for="edit-oauth-uris-input">コールバックURL (redirect_uri)</label>
+          <textarea id="edit-oauth-uris-input" class="form-input" placeholder="https://example.com/callback" rows="4"></textarea>
+          <input type="hidden" id="edit-oauth-sa-id">
+        </div>
+        <div id="edit-oauth-msg" class="alert"></div>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="edit-oauth-cancel">キャンセル</button>
+          <button class="btn btn--primary" id="edit-oauth-submit">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── サービスアカウントから出金モーダル ────────────────────────── -->
+    <div class="modal-backdrop" id="withdraw-sa-modal">
+      <div class="modal-box" style="max-width: 400px;">
+        <h3 class="modal__title"><i class="fa-solid fa-coins"></i> ポイントを引き出す</h3>
+        <p class="text-sub mb-16">
+          サービスアカウントの残高から、個人のポイントへ出金します。<br>
+          <small class="text-muted" id="withdraw-sa-balance-display"></small>
+        </p>
+        <div class="form-group">
+          <label class="form-label" for="withdraw-sa-amount">引き出し額 (pt)</label>
+          <input type="number" id="withdraw-sa-amount" class="form-input" placeholder="例: 1000" min="1">
+          <input type="hidden" id="withdraw-sa-id">
+        </div>
+        <div id="withdraw-sa-msg" class="alert"></div>
+        <div class="modal__actions">
+          <button class="btn btn--ghost" id="withdraw-sa-cancel">キャンセル</button>
+          <button class="btn btn--primary" id="withdraw-sa-submit">引き出す</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── 信頼サービスのヘルプモーダル ────────────────────────────── -->
+    <div class="modal-backdrop" id="trusted-help-modal">
+      <div class="modal-box" style="max-width: 520px;">
+        <h3 class="modal__title">
+          <i class="fa-solid fa-circle-question text-info"></i> 信頼サービスの設定について
+        </h3>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <p class="text-bold mb-4"><i class="fa-solid fa-bolt text-primary"></i> 自動承認</p>
+            <p class="text-sub" style="line-height:1.6;">
+              信頼サービスからの購入リクエストを、Web ダッシュボードで手動承認しなくても自動で処理します。<br>
+              通常の購入フローでは「ダッシュボードで承認」が必要ですが、これをスキップできます。
+            </p>
+          </div>
+
+          <div style="border-top:1px solid var(--color-border);padding-top:16px;">
+            <p class="text-bold mb-4"><i class="fa-solid fa-key text-primary"></i> 操作許可</p>
+            <p class="text-sub" style="line-height:1.6;">
+              信頼サービスが、あなたのサービスアカウントを代わりに操作できるようになります。<br>
+              これによりゲーム内でプレイヤーショップの商品売買ができるようになります。<br>
+              操作の範囲は「商品の取引仲介」のみです。ポイントの不正な引き出しなどはできません。
+            </p>
+          </div>
+        </div>
+
+        <div class="modal__actions">
+          <button class="btn btn--primary" id="trusted-help-close">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/settings.js"></script>
+</body>
+</html>

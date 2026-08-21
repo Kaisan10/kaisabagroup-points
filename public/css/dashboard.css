@@ -1,0 +1,377 @@
+/* ═══════════════════════════════════════════════════════════════
+   ダッシュボード専用（shared クラスで代替できないものだけ）
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── ウェルカムカード ─────────────────────────────────────────── */
+.welcome-card {
+  margin-bottom: 30px;
+}
+
+.welcome-card h1 {
+  margin-bottom: 10px;
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info {
+  color: var(--color-text-sub);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── スタットグリッド ─────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  /* pcのみ20px すまほは0px */
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    gap: 0;
+  }
+}
+
+.stat-card {
+  transition: transform var(--transition), box-shadow var(--transition);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+#ranking-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+.stat-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+  color: var(--color-primary);
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  color: var(--color-text-sub);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ── コード引き換えレイアウト ─────────────────────────────────── */
+.redeem-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.redeem-input-wrapper {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* redeem-inputはform-inputをベースに角丸だけ変更 */
+.redeem-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: 16px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  background: #fff;
+  color: var(--color-text);
+}
+
+.redeem-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(25, 85, 189, .1);
+}
+
+.redeem-input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+/* ── 汎用データテーブル ───────────────────────────────────────── */
+.data-table-wrapper {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.ranking-list>.data-table th,
+.ranking-list>.data-table td {
+  padding: 4px 10px;
+}
+
+.data-table th {
+  color: var(--color-text-sub);
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.amount-plus {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.amount-minus {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.load-more-container {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.max-limit-notice {
+  color: var(--color-text-sub);
+  font-size: 14px;
+  text-align: center;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: var(--radius-sm);
+}
+
+/* ── 情報リスト ───────────────────────────────────────────────── */
+.info-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-list li {
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.info-list li:last-child {
+  border-bottom: none;
+}
+
+.info-icon-box {
+  font-size: 28px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  width: 40px;
+  text-align: center;
+}
+
+.info-text strong {
+  display: block;
+  color: var(--color-text);
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.info-text small {
+  color: var(--color-text-sub);
+  line-height: 1.5;
+}
+
+/* ── レスポンシブ ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .site-header {
+    height: 60px;
+    padding: 0 10px;
+  }
+
+  .site-header__inner {
+    flex-direction: row;
+    height: 100%;
+  }
+
+  .header-text-hide {
+    display: none;
+  }
+
+  .site-logo img {
+    width: 32px !important;
+    margin: 0 8px !important;
+  }
+
+  .header-menu {
+    gap: 0;
+    margin-right: 0;
+  }
+
+  .header-item {
+    padding: 8px;
+    font-size: 18px;
+    gap: 0;
+    margin-right: 10px;
+  }
+
+  .page-container {
+    margin-top: calc(60px + 20px);
+  }
+
+  .card {
+    padding: 1.5em;
+  }
+
+  .form-row {
+    flex-direction: column;
+  }
+
+  .form-row .form-group {
+    width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-card h1 {
+    font-size: 24px;
+    flex-direction: column;
+  }
+
+  .info-list li {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .info-icon-box {
+    width: auto;
+    margin: auto;
+  }
+
+  .redeem-form {
+    flex-direction: column;
+  }
+
+  .redeem-input-wrapper {
+    width: 100%;
+  }
+}
+
+/* ── ギフトカード ─────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 0;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-sub);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--transition), border-color var(--transition);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.tab-btn:hover {
+  color: var(--color-primary);
+  background: rgba(25, 85, 189, .04);
+}
+
+.tab-btn.is-active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.tab-panel {
+  padding-top: 0;
+}
+
+/* 送り主情報バナー */
+.gift-sender-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f0f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: #096dd9;
+}
+
+.gift-sender-info i {
+  color: #096dd9;
+  flex-shrink: 0;
+}
+
+/* フォームヒント（文字数カウンター） */
+.form-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: right;
+  margin-top: 3px;
+}
+
+/* 生成コード表示ボックス */
+.gift-code-result {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: var(--radius-sm);
+}
+
+.gift-code-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-top: 6px;
+}
+
+.gift-code-box code {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--color-text);
+  word-break: break-all;
+  user-select: all;
+}

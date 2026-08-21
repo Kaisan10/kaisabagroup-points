@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <%- include('partials/_head', { title: 'アプリ登録', description: 'アプリ・サービスをかい鯖グループポイントシステムに登録します。' }) %>
+  <style>
+    .reg-card {
+      max-width: 520px;
+      margin: 80px auto 0;
+    }
+    .reg-card .card__icon {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg,#7c3aed,#a855f7);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: #fff;
+      margin-bottom: 20px;
+    }
+    .api-key-box {
+      background: #1a1a2e;
+      color: #7fff7f;
+      font-family: monospace;
+      font-size: 15px;
+      border-radius: 10px;
+      padding: 1em;
+      word-break: break-all;
+      position: relative;
+      margin: 12px 0;
+    }
+    .api-key-copy {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fff; border-radius: 6px;
+      padding: 4px 10px; font-size: 12px; cursor: pointer;
+    }
+    .api-key-copy:hover { background: rgba(255,255,255,.25); }
+    .warn-box {
+      background: #fff7ed; border: 1px solid #fed7aa;
+      border-radius: 10px; padding: .8em 1em;
+      color: #9a3412; font-size: 14px; margin-bottom: 16px;
+    }
+    #state-loading, #state-pending, #state-completed,
+    #state-expired, #state-notfound, #state-already { display: none; }
+    #state-loading { display: flex !important; align-items:center; gap:10px; color:#888; }
+  </style>
+</head>
+<body>
+  <%- include('partials/_header') %>
+
+  <main class="page-container">
+    <div class="card reg-card">
+      <!-- 読み込み中 -->
+      <div id="state-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i> 読み込み中...
+      </div>
+
+      <!-- トークン未指定・無効 -->
+      <div id="state-notfound">
+        <div class="card__icon" style="background:linear-gradient(135deg,#dc2626,#ef4444);">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h1 style="font-size:20px;font-weight:700;margin:0 0 8px;">無効なリンクです</h1>
+        <p style="color:#666;font-size:14px;">このURLは無効か、すでに使用済みです。プラグインで再度登録リクエストを実行してください。</p>
+      </div>
+
+      <!-- 期限切れ -->
+      <div id="state-expired">
+        <div class="card__icon" style="background:linear-gradient(135deg,#d97706,#f59e0b);">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <h1 style="font-size:20px;font-weight:700;margin:0 0 8px;">リンクの有効期限が切れました</h1>
+        <p style="color:#666;font-size:14px;">このリンクは10分間のみ有効です。プラグインで再度登録リクエストを実行してください。</p>
+      </div>
+
+      <!-- 承認前 (pending) -->
+      <div id="state-pending">
+        <div class="card__icon">
+          <i class="fa-solid fa-server"></i>
+        </div>
+        <h1 style="font-size:20px;font-weight:700;margin:0 0 8px;">アプリ・サービスアカウントの登録</h1>
+        <p style="color:#666;font-size:14px;margin-bottom:20px;">
+          以下のアプリ・サービスをポイントシステムに登録します。
+          登録するとAPIキーが発行されます。
+        </p>
+        <div class="form-group">
+          <label class="form-label">アプリ・サービス名</label>
+          <div class="form-input" style="background:#f8f6ff;pointer-events:none;" id="display-server-name">—</div>
+        </div>
+        <p style="font-size:13px;color:#888;margin:12px 0 20px;">
+          ※ このDiscourseアカウントがオーナーとして登録されます。
+        </p>
+        <div id="pending-msg" style="margin-bottom:12px;font-size:14px;"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn--primary" id="confirm-btn" style="flex:1;">
+            <i class="fa-solid fa-check"></i> 登録する
+          </button>
+          <a href="/" class="btn btn--ghost" style="flex:1;text-align:center;">キャンセル</a>
+        </div>
+      </div>
+
+      <!-- 登録完了 (completed = アカウント作成後のAPIキー表示) -->
+      <div id="state-completed">
+        <div class="card__icon" style="background:linear-gradient(135deg,#16a34a,#22c55e);">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h1 style="font-size:20px;font-weight:700;margin:0 0 8px;">登録完了！</h1>
+        <p style="font-size:14px;color:#444;margin-bottom:16px;">
+          アプリ・サービスアカウントが作成されました。
+          以下のAPIキーをアプリの設定に保存してください。
+        </p>
+        <div class="warn-box">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <strong>このAPIキーは二度と表示されません。</strong> 今すぐコピーしてください。
+        </div>
+        <div class="api-key-box" id="api-key-display">
+          (読み込み中...)
+          <button class="api-key-copy" id="api-key-copy-btn" type="button">
+            <i class="fa-regular fa-copy"></i> コピー
+          </button>
+        </div>
+        <p style="font-size:13px;color:#888;margin-top:12px;">
+          発行されたAPIキーを <code>X-API-Key</code> ヘッダに設定してリクエストを送信してください。
+          詳細は <a href="/docs/integration-guide.md" style="color:var(--color-primary);">連携ガイド</a> を参照してください。
+        </p>
+        <a href="/dashboard" class="btn btn--primary" style="margin-top:16px;display:inline-flex;gap:8px;">
+          <i class="fa-solid fa-arrow-left"></i> ダッシュボードへ
+        </a>
+      </div>
+
+      <!-- 既に登録済み (もうこのトークンでは確認できない) -->
+      <div id="state-already">
+        <div class="card__icon" style="background:linear-gradient(135deg,#0891b2,#06b6d4);">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h1 style="font-size:20px;font-weight:700;margin:0 0 8px;">登録済みです</h1>
+        <p style="color:#666;font-size:14px;">このリンクはすでに使用済みです。</p>
+        <a href="/dashboard" class="btn btn--ghost" style="margin-top:16px;display:inline-flex;gap:8px;">
+          ダッシュボードへ
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/register-server-ui.js"></script>
+</body>
+</html>
