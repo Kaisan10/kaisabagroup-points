@@ -22,7 +22,7 @@ jest.mock('../src/config/database', () => {
   };
 });
 
-const { pool, _mockClient: client } = require('../src/config/database');
+const { _mockClient: client } = require('../src/config/database');
 const User = require('../src/models/User');
 
 describe('User.deductPoints', () => {
@@ -110,7 +110,7 @@ describe('User.deductPoints', () => {
 
     try {
       await User.deductPoints(1, 100, 'purchase');
-    } catch (_) {}
+    } catch { /* expected */ }
 
     expect(client.release).toHaveBeenCalledTimes(1);
     jest.clearAllMocks();

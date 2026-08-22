@@ -30,7 +30,7 @@ function authenticateService(req, res, next) {
         error: 'Invalid API key'
       });
     }
-  } catch (err) {
+  } catch {
     return res.status(401).json({ success: false, error: 'Invalid API key' });
   }
 

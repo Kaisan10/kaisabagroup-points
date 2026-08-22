@@ -48,6 +48,11 @@
   box-shadow: var(--shadow-card-hover);
 }
 
+#ranking-card  {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
+}
+
 #ranking-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-card-hover);
@@ -130,6 +135,12 @@
 .ranking-list>.data-table th,
 .ranking-list>.data-table td {
   padding: 4px 10px;
+  text-align: left;
+}
+
+.ranking-list>.data-table td:first-child,
+.ranking-list>.data-table td:last-child {
+  text-align: center;
 }
 
 .data-table th {

@@ -14,7 +14,7 @@ const pool = new Pool({
 
 // ★ 重要: アイドル状態のクライアントでエラーが発生した場合（PostgreSQL再起動など）
 // ここで捕捉しないと unhandled 'error' event でプロセスがクラッシュする
-pool.on('error', (err, client) => {
+pool.on('error', (err, _client) => {
   console.error('⚠️ DBプールでエラーが発生しました（PostgreSQL再起動等）:', err.message);
   // エラーを捕捉するだけでよい。pg-pool が自動的に接続を破棄し、
   // 次のリクエスト時に新しい接続を確立する

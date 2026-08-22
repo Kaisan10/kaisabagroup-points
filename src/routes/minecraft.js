@@ -1,20 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+
 const crypto = require('crypto');
 const { pool } = require('../config/database');
 
-// トークン生成ヘルパー
-function generateToken() {
-  // 6文字のランダムなトークン（数字と大文字）
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 似た文字を除外
-  let token = '';
-  for (let i = 0; i < 6; i++) {
-    const randomIndex = crypto.randomInt(0, chars.length);
-    token += chars.charAt(randomIndex);
-  }
-  return token;
-}
 
 // API認証ミドルウェア（簡易版）
 function authenticateAPI(req, res, next) {
@@ -37,7 +26,7 @@ function authenticateAPI(req, res, next) {
       console.log('❌ Minecraft API authentication failed');
       return res.status(401).json({ success: false, error: 'Invalid API key' });
     }
-  } catch (err) {
+  } catch {
     return res.status(401).json({ success: false, error: 'Invalid API key' });
   }
   

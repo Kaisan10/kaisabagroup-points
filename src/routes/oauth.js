@@ -18,7 +18,7 @@ const router  = express.Router();
 const { pool } = require('../config/database');
 const OAuthToken  = require('../models/OAuthToken');
 const requireAuth = require('../middleware/requireAuth');
-const serverAuth  = require('../middleware/serverAuth');
+
 const { verifyApiKey } = require('../utils/apiKey');
 
 // ─── ヘルパー ──────────────────────────────────────────────

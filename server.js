@@ -17,7 +17,7 @@ const servicesRoutes = require('./src/routes/services');
 const requireAuth    = require('./src/middleware/requireAuth');
 const serverApiRoutes = require('./src/routes/serverApi');   // 経済システム: プラグイン向け
 const operatorRoutes  = require('./src/routes/operator');    // 経済システム: 運営者向け
-const User = require('./src/models/User');
+
 const PendingTransaction = require('./src/models/PendingTransaction'); // 期限切れジョブ用
 const userApiRoutes         = require('./src/routes/userApi');          // ユーザー取引API
 const userInfoApiRoutes     = require('./src/routes/userInfoApi');      // ユーザー情報・ポイントAPI
@@ -274,74 +274,79 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// データベース初期化とサーバー起動
-initDatabase()
-  .then(() => {
-    const server = app.listen(PORT, () => {
-      console.log(`🚀 かい鯖グループポイントサーバー起動！`);
-      console.log(`📍 http://localhost:${PORT}`);
-      console.log(`🔗 Discourse: ${process.env.DISCOURSE_URL}`);
-    });
-
-    // ─── 期限切れ取引の自動処理ジョブ ────────────────────────────────────
-    const EXPIRE_INTERVAL_MS = 2 * 60 * 1000;
-    const expireJob = setInterval(async () => {
-      try {
-        const count = await PendingTransaction.expireStale();
-        if (count > 0) {
-          console.log(`⏰ ${count}件の期限切れ取引を expired に更新しました`);
-        }
-      } catch (err) {
-        console.error('⚠️ 期限切れ取引更新ジョブエラー:', err.message);
-      }
-    }, EXPIRE_INTERVAL_MS);
-    console.log(`⏰ 期限切れ取引ジョブ開始 (${EXPIRE_INTERVAL_MS / 1000}秒間隔)`);
-
-    // ─── サブスクリプション 猶予超過監視ジョブ ───────────────────────────────
-    // 課金自体はアプリ側が POST /api/server/subscription/:id/charge を叩くことで実行される。
-    // このジョブは猶予期間（interval_days分）超過でも課金されなかった場合に suspended に変更するだけ。
-    const SUB_INTERVAL_MS = 5 * 60 * 1000;
-    const subscriptionJob = setInterval(async () => {
-      try {
-        const { suspended } = await Subscription.suspendOverdue();
-        if (suspended > 0) {
-          console.log(`⚠️ サブスク猶予超過ジョブ: ${suspended}件をsuspendedに変更`);
-        }
-      } catch (err) {
-        console.error('⚠️ サブスク猶予超過ジョブエラー:', err.message);
-      }
-    }, SUB_INTERVAL_MS);
-    console.log(`⚠️ サブスク猶予超過監視ジョブ開始 (${SUB_INTERVAL_MS / 1000}秒間隔)。課金はアプリ側が /charge を叩くことで実行されます。`);
-
-    // ─── Graceful Shutdown (優雅な停止) ──────────────────────────────────
-    function gracefulShutdown(signal) {
-      console.log(`\n🛑 ${signal} 受信。サーバーを停止します...`);
-      
-      server.close(async () => {
-        console.log('門 HTTPサーバーが正常に終了しました。');
-        clearInterval(expireJob);
-        clearInterval(subscriptionJob);
-        try {
-          const { pool } = require('./src/config/database');
-          await pool.end();
-          console.log('🐘 データベース接続プールを正常にクローズしました。');
-          process.exit(0);
-        } catch (err) {
-          console.error('❌ シャットダウン中にエラーが発生しました:', err);
-          process.exit(1);
-        }
+if (require.main === module) {
+  // データベース初期化とサーバー起動
+  initDatabase()
+    .then(() => {
+      const server = app.listen(PORT, () => {
+        console.log(`🚀 かい鯖グループポイントサーバー起動！`);
+        console.log(`📍 http://localhost:${PORT}`);
+        console.log(`🔗 Discourse: ${process.env.DISCOURSE_URL}`);
       });
 
-      setTimeout(() => {
-        console.error('⚠️ シャットダウンがタイムアウトしたため、強制終了します。');
-        process.exit(1);
-      }, 10000);
-    }
+      // ─── 期限切れ取引の自動処理ジョブ ────────────────────────────────────
+      const EXPIRE_INTERVAL_MS = 2 * 60 * 1000;
+      const expireJob = setInterval(async () => {
+        try {
+          const count = await PendingTransaction.expireStale();
+          if (count > 0) {
+            console.log(`⏰ ${count}件の期限切れ取引を expired に更新しました`);
+          }
+        } catch (err) {
+          console.error('⚠️ 期限切れ取引更新ジョブエラー:', err.message);
+        }
+      }, EXPIRE_INTERVAL_MS);
+      console.log(`⏰ 期限切れ取引ジョブ開始 (${EXPIRE_INTERVAL_MS / 1000}秒間隔)`);
 
-    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-    process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
-  })
-  .catch(err => {
-    console.error('❌ データベース初期化エラー:', err);
-    process.exit(1);
-  });
+      // ─── サブスクリプション 猶予超過監視ジョブ ───────────────────────────────
+      // 課金自体はアプリ側が POST /api/server/subscription/:id/charge を叩くことで実行される。
+      // このジョブは猶予期間（interval_days分）超過でも課金されなかった場合に suspended に変更するだけ。
+      const SUB_INTERVAL_MS = 5 * 60 * 1000;
+      const subscriptionJob = setInterval(async () => {
+        try {
+          const { suspended } = await Subscription.suspendOverdue();
+          if (suspended > 0) {
+            console.log(`⚠️ サブスク猶予超過ジョブ: ${suspended}件をsuspendedに変更`);
+          }
+        } catch (err) {
+          console.error('⚠️ サブスク猶予超過ジョブエラー:', err.message);
+        }
+      }, SUB_INTERVAL_MS);
+      console.log(`⚠️ サブスク猶予超過監視ジョブ開始 (${SUB_INTERVAL_MS / 1000}秒間隔)。課金はアプリ側が /charge を叩くことで実行されます。`);
+
+      // ─── Graceful Shutdown (優雅な停止) ──────────────────────────────────
+      function gracefulShutdown(signal) {
+        console.log(`\n🛑 ${signal} 受信。サーバーを停止します...`);
+        
+        server.close(async () => {
+          console.log('門 HTTPサーバーが正常に終了しました。');
+          clearInterval(expireJob);
+          clearInterval(subscriptionJob);
+          try {
+            const { pool } = require('./src/config/database');
+            await pool.end();
+            console.log('🐘 データベース接続プールを正常にクローズしました。');
+            process.exit(0);
+          } catch (err) {
+            console.error('❌ シャットダウン中にエラーが発生しました:', err);
+            process.exit(1);
+          }
+        });
+
+        setTimeout(() => {
+          console.error('⚠️ シャットダウンがタイムアウトしたため、強制終了します。');
+          process.exit(1);
+        }, 10000);
+      }
+
+      process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+      process.on('SIGINT',  () => gracefulShutdown('SIGINT'));
+    })
+    .catch(err => {
+      console.error('❌ データベース初期化エラー:', err);
+      process.exit(1);
+    });
+}
+
+// テスト用にエクスポート
+module.exports = { app, initDatabase };

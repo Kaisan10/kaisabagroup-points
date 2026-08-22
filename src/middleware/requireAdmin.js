@@ -16,7 +16,7 @@
 const crypto = require('crypto');
 
 function requireAdmin(req, res, next) {
-  const adminUsername = (process.env.ADMIN_USERNAME || '').trim();
+
   const adminToken    = (process.env.ADMIN_TOKEN || '').trim();
 
   // ─── ① セッション認証（Web UI 用）────────────────────────────────────────

@@ -50,7 +50,7 @@ function globalOriginCheck(req, res, next) {
       return res.status(403).json({ error: 'CSRF Forbidden' });
     }
     return next();
-  } catch (_) {
+  } catch {
     return res.status(403).json({ error: 'CSRF Forbidden' });
   }
 }

@@ -550,6 +550,15 @@ html {
   align-items: center;
 }
 
+.flex-center {
+  display: flex;
+  align-items: center;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
 .mt-16 {
   margin-top: 16px;
 }

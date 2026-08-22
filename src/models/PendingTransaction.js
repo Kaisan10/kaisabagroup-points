@@ -12,7 +12,7 @@
 
 const crypto = require('crypto');
 const { pool } = require('../config/database');
-const User = require('./User');
+
 
 const TX_TOKEN_BYTES = 16; // 32文字の16進数
 const TX_TTL_MS = 5 * 60 * 1000; // 5分

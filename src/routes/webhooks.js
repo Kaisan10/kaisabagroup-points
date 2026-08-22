@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const User = require('../models/User');
-const { pool } = require('../config/database');
+
 
 const webhookSecret = process.env.WEBHOOK_SECRET || null;
 
@@ -12,7 +12,7 @@ function getRawBody(req) {
   // フォールバック: オブジェクトなら安定化のため元文字列化
   try {
     return Buffer.from(JSON.stringify(req.body || {}), 'utf8');
-  } catch (_) {
+  } catch {
     return Buffer.from('', 'utf8');
   }
 }
@@ -65,7 +65,7 @@ router.post('/discourse/topic-created', async (req, res) => {
 
     const raw = getRawBody(req);
     let bodyJson;
-    try { bodyJson = JSON.parse(raw.toString('utf8') || '{}'); } catch (_) { bodyJson = {}; }
+    try { bodyJson = JSON.parse(raw.toString('utf8') || '{}'); } catch { bodyJson = {}; }
     console.log('📥 Topic created webhook body:', JSON.stringify(bodyJson));
 
     const topic = bodyJson.topic;
@@ -135,7 +135,7 @@ router.post('/discourse/post-created', async (req, res) => {
 
     const raw = getRawBody(req);
     let bodyJson;
-    try { bodyJson = JSON.parse(raw.toString('utf8') || '{}'); } catch (_) { bodyJson = {}; }
+    try { bodyJson = JSON.parse(raw.toString('utf8') || '{}'); } catch { bodyJson = {}; }
     console.log('📥 Post created webhook body:', JSON.stringify(bodyJson));
 
     const post = bodyJson.post;

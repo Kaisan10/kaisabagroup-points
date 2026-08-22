@@ -362,23 +362,6 @@ router.get('/tx/:tx_token', async (req, res) => {
   }
 });
 
-// ─── 内部: webhook 通知（fire-and-forget）────────────────────────────────
-async function notifyWebhook(url, payload) {
-  const body = JSON.stringify(payload);
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 5000);
-
-  try {
-    await fetch(url, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      signal:  ctrl.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 // ─── POST /api/server/tx/:tx_token/approve ──────────────────────────────
 // プラグイン側での承認（アイテム配布完了後のポイント確定）

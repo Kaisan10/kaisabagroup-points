@@ -21,7 +21,7 @@ jest.mock('../src/config/database', () => {
   };
 });
 
-const { pool, _mockClient: client } = require('../src/config/database');
+const { _mockClient: client } = require('../src/config/database');
 const User = require('../src/models/User');
 
 // ──────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ describe('User.addPoints', () => {
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('fail'));
 
-    try { await User.addPoints(1, 100, 'forum_reward'); } catch (_) {}
+    try { await User.addPoints(1, 100, 'forum_reward'); } catch { /* expected */ }
     expect(client.release).toHaveBeenCalledTimes(1);
     jest.clearAllMocks();
 

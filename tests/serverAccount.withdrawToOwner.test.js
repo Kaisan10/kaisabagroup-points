@@ -29,7 +29,7 @@ jest.mock('../src/utils/apiKey', () => ({
   keyPrefix: jest.fn(() => 'skp_testk'),
 }));
 
-const { pool, _mockClient: client } = require('../src/config/database');
+const { _mockClient: client } = require('../src/config/database');
 const ServerAccount = require('../src/models/ServerAccount');
 
 describe('ServerAccount.withdrawToOwner', () => {
@@ -158,7 +158,7 @@ describe('ServerAccount.withdrawToOwner', () => {
       .mockResolvedValueOnce({ rows: [{ total_points: '1000' }] })
       .mockResolvedValueOnce({ rows: [{ balance: '50' }] });
 
-    try { await ServerAccount.withdrawToOwner(1, 10, 100); } catch (_) {}
+    try { await ServerAccount.withdrawToOwner(1, 10, 100); } catch { /* expected */ }
     expect(client.release).toHaveBeenCalledTimes(1);
     jest.clearAllMocks();
 
