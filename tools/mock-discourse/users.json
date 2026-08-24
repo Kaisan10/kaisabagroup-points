@@ -1,0 +1,18 @@
+[
+  {
+    "external_id": 1,
+    "username": "dev_admin",
+    "email": "admin@dev.local",
+    "name": "開発管理者",
+    "admin": true,
+    "avatar_url": ""
+  },
+  {
+    "external_id": 2,
+    "username": "dev_user",
+    "email": "user@dev.local",
+    "name": "開発ユーザー",
+    "admin": false,
+    "avatar_url": ""
+  }
+]
