@@ -23,6 +23,7 @@ APIを通じて外部サービスと連携し、ポイントの獲得や消費�
 ### 注意
 - Discourseの環境が必要です。
 
+
 1. **リポジトリのクローン**
    ```bash
    git clone https://github.com/kaisan10/kaisabagroup-points.git

@@ -531,6 +531,81 @@ async function initDatabase() {
         ON gift_codes(creator_user_id)
     `);
 
+    // ─── server_accounts: redirect_uris カラム追加 ─────────────────────────
+    await pool.query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_name = 'server_accounts' AND column_name = 'redirect_uris'
+        ) THEN
+          ALTER TABLE server_accounts ADD COLUMN redirect_uris TEXT;
+        END IF;
+      END $$;
+    `);
+
+    // ─── OAuth テーブル群 ────────────────────────────────────────────────────
+    // 認可コード（ワンタイム）
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS oauth_auth_codes (
+        id           SERIAL PRIMARY KEY,
+        code         VARCHAR(64) UNIQUE NOT NULL,
+        server_id    INTEGER NOT NULL REFERENCES server_accounts(id) ON DELETE CASCADE,
+        user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        scopes       TEXT NOT NULL,
+        redirect_uri TEXT NOT NULL,
+        expires_at   TIMESTAMPTZ NOT NULL,
+        used         BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at   TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_oauth_auth_codes_code
+        ON oauth_auth_codes(code)
+    `);
+
+    // アクセストークン（1時間有効）
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS oauth_access_tokens (
+        id           SERIAL PRIMARY KEY,
+        token_hash   VARCHAR(64) UNIQUE NOT NULL,
+        token_prefix VARCHAR(8) NOT NULL,
+        server_id    INTEGER NOT NULL REFERENCES server_accounts(id) ON DELETE CASCADE,
+        user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        scopes       TEXT NOT NULL,
+        expires_at   TIMESTAMPTZ NOT NULL,
+        revoked      BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at   TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_oauth_access_tokens_prefix
+        ON oauth_access_tokens(token_prefix)
+    `);
+
+    // リフレッシュトークン（90日有効・ローテーション）
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
+        id           SERIAL PRIMARY KEY,
+        token_hash   VARCHAR(64) UNIQUE NOT NULL,
+        token_prefix VARCHAR(8) NOT NULL,
+        server_id    INTEGER NOT NULL REFERENCES server_accounts(id) ON DELETE CASCADE,
+        user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        scopes       TEXT NOT NULL,
+        expires_at   TIMESTAMPTZ NOT NULL,
+        revoked      BOOLEAN NOT NULL DEFAULT FALSE,
+        used         BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at   TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens_prefix
+        ON oauth_refresh_tokens(token_prefix)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_oauth_refresh_tokens_user
+        ON oauth_refresh_tokens(user_id)
+    `);
+
     console.log('✅ データベーステーブル作成完了');
   } catch (err) {
     console.error('❌ データベース初期化エラー:', err);
