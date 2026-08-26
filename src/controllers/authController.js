@@ -9,7 +9,11 @@ async function startDiscourseLogin(req, res) {
     const { url, nonce } = generateLoginUrl(returnUrl);
     
     // nonceをセッションに保存（検証用）
+    // セッションがDBに書き込まれてからリダイレクトする（非同期競合対策）
     req.session.discourse_nonce = nonce;
+    await new Promise((resolve, reject) => {
+      req.session.save(err => err ? reject(err) : resolve());
+    });
     
     console.log(`🔐 Discourseログイン開始: ${url}`);
     
