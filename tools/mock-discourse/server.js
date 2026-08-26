@@ -55,7 +55,7 @@ function parseCookies(req) {
 
 function setCookies(res, userIndex, autoLogin) {
   const maxAge = 60 * 60 * 24 * 30; // 30日
-  const base   = `Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+  const base   = `Path=/; Max-Age=${maxAge}; SameSite=Lax; HttpOnly`;
   res.setHeader('Set-Cookie', [
     `mock_last_user=${userIndex}; ${base}`,
     `mock_auto_login=${autoLogin ? '1' : '0'}; ${base}`
@@ -218,8 +218,10 @@ app.get('/session/sso_provider', (req, res) => {
     return res.status(400).send('sso / sig パラメータが必要です');
   }
 
-  // 署名検証
-  if (hmac(sso) !== sig) {
+  // 署名検証（timing-safe 比較）
+  const expectedSig = hmac(sso);
+  if (expectedSig.length !== sig.length ||
+      !crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(sig))) {
     return res.status(403).send('署名が不正です（DISCOURSE_SECRET を確認してください）');
   }
 
@@ -259,7 +261,10 @@ app.post('/session/sso_provider', (req, res) => {
     return res.status(400).send('sso / sig が見つかりません');
   }
 
-  if (hmac(sso) !== sig) {
+  // 署名検証（timing-safe 比較）
+  const expectedSig = hmac(sso);
+  if (expectedSig.length !== sig.length ||
+      !crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(sig))) {
     return res.status(403).send('署名が不正です');
   }
 
@@ -267,6 +272,10 @@ app.post('/session/sso_provider', (req, res) => {
   const params    = new URLSearchParams(decoded);
   const nonce     = params.get('nonce');
   const returnUrl = params.get('return_sso_url');
+
+  if (!nonce || !returnUrl) {
+    return res.status(400).send('nonce または return_sso_url が見つかりません');
+  }
 
   const users     = loadUsers();
   const userIndex = parseInt(user_index, 10);
@@ -284,7 +293,7 @@ app.post('/session/sso_provider', (req, res) => {
 
 // GET /reset  ← 自動ログインリセット
 app.get('/reset', (req, res) => {
-  const expired = 'Path=/; Max-Age=0; SameSite=Lax';
+  const expired = 'Path=/; Max-Age=0; SameSite=Lax; HttpOnly';
   res.setHeader('Set-Cookie', [
     `mock_last_user=; ${expired}`,
     `mock_auto_login=0; ${expired}`
@@ -312,7 +321,8 @@ app.get('/reset', (req, res) => {
 
 // ── 起動 ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🎭 Mock Discourse SSO 起動中 → http://192.168.50.64:${PORT}`);
+  const host = process.env.MOCK_DISCOURSE_HOST || 'localhost';
+  console.log(`🎭 Mock Discourse SSO 起動中 → http://${host}:${PORT}`);
   console.log(`   /reset にアクセスすると自動ログインをリセットできます`);
   const users = loadUsers();
   users.forEach((u, i) => {
