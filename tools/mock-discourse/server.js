@@ -312,7 +312,7 @@ app.get('/reset', (req, res) => {
 
 // ── 起動 ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🎭 Mock Discourse SSO 起動中 → http://localhost:${PORT}`);
+  console.log(`🎭 Mock Discourse SSO 起動中 → http://192.168.50.64:${PORT}`);
   console.log(`   /reset にアクセスすると自動ログインをリセットできます`);
   const users = loadUsers();
   users.forEach((u, i) => {

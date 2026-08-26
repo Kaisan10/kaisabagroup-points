@@ -77,7 +77,8 @@ app.use(helmet({
       "connect-src": ["'self'"],
       "object-src": ["'none'"],
       "base-uri": ["'self'"],
-      "frame-ancestors": ["'self'"]
+      "frame-ancestors": ["'self'"],
+      "upgrade-insecure-requests": process.env.SITE_URL && process.env.SITE_URL.startsWith('https://') ? [] : null
     }
   },
   hidePoweredBy: true
@@ -132,7 +133,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.SITE_URL ? process.env.SITE_URL.startsWith('https://') : (process.env.NODE_ENV === 'production'),
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7日間
     sameSite: 'lax'
