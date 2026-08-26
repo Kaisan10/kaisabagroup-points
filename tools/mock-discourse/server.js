@@ -219,9 +219,10 @@ app.get('/session/sso_provider', (req, res) => {
   }
 
   // 署名検証（timing-safe 比較）
-  const expectedSig = hmac(sso);
-  if (expectedSig.length !== sig.length ||
-      !crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(sig))) {
+  const expectedBuf = Buffer.from(hmac(sso));
+  const actualBuf   = Buffer.from(String(sig));
+  if (expectedBuf.length !== actualBuf.length ||
+      !crypto.timingSafeEqual(expectedBuf, actualBuf)) {
     return res.status(403).send('署名が不正です（DISCOURSE_SECRET を確認してください）');
   }
 
@@ -262,9 +263,10 @@ app.post('/session/sso_provider', (req, res) => {
   }
 
   // 署名検証（timing-safe 比較）
-  const expectedSig = hmac(sso);
-  if (expectedSig.length !== sig.length ||
-      !crypto.timingSafeEqual(Buffer.from(expectedSig), Buffer.from(sig))) {
+  const expectedBuf = Buffer.from(hmac(sso));
+  const actualBuf   = Buffer.from(String(sig));
+  if (expectedBuf.length !== actualBuf.length ||
+      !crypto.timingSafeEqual(expectedBuf, actualBuf)) {
     return res.status(403).send('署名が不正です');
   }
 
