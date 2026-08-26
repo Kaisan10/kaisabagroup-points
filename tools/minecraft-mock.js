@@ -9,7 +9,7 @@
  *   node tools/minecraft-mock.js [ポイントサーバーのURL] [APIキー]
  *
  * 例:
- *   node tools/minecraft-mock.js http://localhost:4001 5d5e9acd17e4034ec14417d409382576
+ *   node tools/minecraft-mock.js http://localhost:4001 <API_KEY>
  *
  * ※ 引数を省略した場合は .env から自動読み込み
  */
