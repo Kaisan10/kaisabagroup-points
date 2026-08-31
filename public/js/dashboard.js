@@ -210,7 +210,10 @@
     }
 
     // フォーム送信時はモーダルを表示するだけ
+    const fee = Math.max(1, Math.ceil(points * 0.01));
     $('gift-confirm-points').textContent = points.toLocaleString();
+    $('gift-confirm-fee').textContent = fee.toLocaleString();
+    $('gift-confirm-total').textContent = (points + fee).toLocaleString();
     $('gift-confirm-title').textContent = title;
     $('gift-confirm-memo').textContent = memo || '（なし）';
     

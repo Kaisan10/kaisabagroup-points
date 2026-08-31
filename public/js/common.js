@@ -108,11 +108,18 @@ function $(id) { return document.getElementById(id); }
     return id;
   };
 
+  let cardAnimObserver = null;
+
   function clearPageResources() {
     activeIntervals.forEach(clearInterval);
     activeIntervals = [];
-    
-    // 他のリソース（実行中のスクリプトタグなど）のクリーンアップが必要な場合はここに追加
+
+    // Intersection Observer をページ離脱時に切断（メモリリーク防止）
+    if (cardAnimObserver) {
+      cardAnimObserver.disconnect();
+      cardAnimObserver = null;
+    }
+
     const addedScripts = document.querySelectorAll('script[data-spa-script]');
     addedScripts.forEach(s => s.remove());
   }
@@ -267,9 +274,27 @@ function $(id) { return document.getElementById(id); }
       const newMain = newDoc.querySelector('main');
       if (main && newMain) {
         main.innerHTML = newMain.innerHTML;
-        main.className = newMain.className; // 一旦クラスをリセット
-        void main.offsetWidth;              // 強制リフロー
-        main.classList.add('page-transition-fade');
+        main.className = newMain.className;
+
+        // ── ビューポート内カードのみアニメーション ──────
+        // 全カードを非表示状態にしてからObserverで入ったものだけ表示
+        const cards = main.querySelectorAll('.card');
+        cards.forEach(card => {
+          card.style.opacity = '0';
+        });
+
+        if (cardAnimObserver) cardAnimObserver.disconnect();
+        cardAnimObserver = new IntersectionObserver((entries, obs) => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const card = entry.target;
+            card.style.opacity = '';
+            card.classList.add('card--animate-in');
+            obs.unobserve(card); // 一度アニメしたら監視終了
+          });
+        }, { threshold: 0.05 }); // 5%でも見えたら発火
+
+        cards.forEach(card => cardAnimObserver.observe(card));
       }
 
       // ── スクリプトの再実行 ──────────────────────────

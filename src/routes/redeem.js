@@ -51,7 +51,24 @@ router.post('/gift/create', requireAuth, async (req, res) => {
       return res.status(403).json({ success: false, error: 'アカウントが停止されています' });
     }
 
+    // 手数料の振込先サービスアカウントを確認
+    const feeRecipientName = process.env.SERVICE_ACCOUNT_FEE_RECIPIENT;
+    if (!feeRecipientName) {
+      return res.status(503).json({ success: false, error: 'ギフト作成が一時的に利用できません（設定不備）' });
+    }
+    const recipientRes = await pool.query(
+      'SELECT id FROM server_accounts WHERE name = $1 AND is_active = TRUE LIMIT 1',
+      [feeRecipientName]
+    );
+    if (recipientRes.rows.length === 0) {
+      return res.status(503).json({ success: false, error: 'ギフト作成が一時的に利用できません（設定不備）' });
+    }
+    const recipientAccountId = recipientRes.rows[0].id;
+
     const pointsBig = BigInt(Math.floor(Number(points)));
+    // 手数料: 1%切り上げ（最低1pt）
+    const feeBig = BigInt(Math.max(1, Math.ceil(Number(pointsBig) * 0.01)));
+    const totalDeductBig = pointsBig + feeBig;
     const cleanTitle = title.trim();
     const cleanMemo  = (memo && typeof memo === 'string') ? memo.trim() : null;
 
@@ -70,9 +87,9 @@ router.post('/gift/create', requireAuth, async (req, res) => {
       }
 
       const currentPoints = BigInt(userRow.rows[0].total_points);
-      if (currentPoints < pointsBig) {
+      if (currentPoints < totalDeductBig) {
         await client.query('ROLLBACK');
-        return res.status(402).json({ success: false, error: `ポイントが不足しています（残高: ${currentPoints.toLocaleString('en')}pt）` });
+        return res.status(402).json({ success: false, error: `ポイントが不足しています（残高: ${currentPoints.toLocaleString('en')}pt、必要: ${totalDeductBig.toLocaleString('en')}pt）` });
       }
 
       // コード生成（衝突時は最大5回リトライ）
@@ -87,10 +104,10 @@ router.post('/gift/create', requireAuth, async (req, res) => {
         return res.status(500).json({ success: false, error: 'コード生成に失敗しました。もう一度お試しください' });
       }
 
-      // ポイント減算
+      // ユーザーから合計（ギフト分 + 手数料）を減算
       await client.query(
         'UPDATE users SET total_points = total_points - $1 WHERE id = $2',
-        [pointsBig.toString(), userId]
+        [totalDeductBig.toString(), userId]
       );
 
       // gift_codes に登録
@@ -100,7 +117,7 @@ router.post('/gift/create', requireAuth, async (req, res) => {
         [code, userId, pointsBig.toString(), cleanTitle, cleanMemo]
       );
 
-      // 送り主の point_transactions に記録
+      // 送り主の point_transactions に記録（ギフト分）
       const senderDesc = `ギフト送付: ${cleanTitle}`;
       await client.query(
         `INSERT INTO point_transactions (user_id, amount, transaction_type, description)
@@ -108,18 +125,32 @@ router.post('/gift/create', requireAuth, async (req, res) => {
         [userId, (-pointsBig).toString(), 'gift_sent', senderDesc]
       );
 
+      // 手数料の point_transactions に記録
+      await client.query(
+        `INSERT INTO point_transactions (user_id, amount, transaction_type, description)
+         VALUES ($1, $2, 'gift_fee', 'ギフト作成手数料')`,
+        [userId, (-feeBig).toString()]
+      );
+
+      // 振込先サービスアカウントのbalanceに手数料を加算
+      await client.query(
+        'UPDATE server_accounts SET balance = balance + $1 WHERE id = $2',
+        [feeBig.toString(), recipientAccountId]
+      );
+
       await client.query('COMMIT');
 
       // セッションのポイントを更新
-      req.session.user.total_points = Number(currentPoints - pointsBig);
+      req.session.user.total_points = Number(currentPoints - totalDeductBig);
 
-      console.log(`✅ ギフトコード作成: User ${userId} -${pointsBig}pt code="${code}"`);
+      console.log(`✅ ギフトコード作成: User ${userId} -${pointsBig}pt fee=${feeBig}pt → ${feeRecipientName} code="${code}"`);
 
       res.json({
         success: true,
         data: {
           code,
           points: Number(pointsBig),
+          fee: Number(feeBig),
           title: cleanTitle,
           memo: cleanMemo,
         }

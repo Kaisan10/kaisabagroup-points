@@ -241,17 +241,23 @@
       <div class="modal-box" style="max-width: 400px;">
         <h3 class="modal__title">サービスアカウント作成</h3>
         <p class="text-sub mb-16">
-          サービスアカウントの名前を入力してください。1人1つまで作成可能です。<br>
-          <small class="text-muted">※5文字以上の半角英数字と記号のみ使用可能（スペース不可）</small>
+          サービスアカウントの名前を入力してください。<br>
+          <small class="text-muted">※5文字以上の半角英数字と記号のみ使用可能（スペース不可）</small><br>
+          <small class="text-muted" id="sa-fee-notice" style="display:none;">※2個目以降の作成には <strong>50pt</strong> の手数料がかかります</small>
         </p>
         <div class="form-group">
           <label class="form-label" for="sa-name-input">名前</label>
           <input type="text" id="sa-name-input" class="form-input" placeholder="例: My-Server_01" maxlength="100">
         </div>
+        <!-- 手数料確認メッセージ（2個目以降のみ表示） -->
+        <div id="sa-fee-confirm" class="alert alert--warning" style="display:none;">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          作成には <strong>50pt</strong> の手数料がかかります。よろしいですか？
+        </div>
         <div id="create-sa-msg" class="alert"></div>
         <div class="modal__actions">
           <button class="btn btn--ghost" id="create-sa-cancel">キャンセル</button>
-          <button class="btn btn--primary" id="create-sa-submit">完了</button>
+          <button class="btn btn--primary" id="create-sa-submit">作成</button>
         </div>
       </div>
     </div>
