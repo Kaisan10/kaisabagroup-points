@@ -132,11 +132,15 @@ router.post('/gift/create', requireAuth, async (req, res) => {
         [userId, (-feeBig).toString()]
       );
 
-      // 振込先サービスアカウントのbalanceに手数料を加算
-      await client.query(
-        'UPDATE server_accounts SET balance = balance + $1 WHERE id = $2',
+      // 振込先サービスアカウントのbalanceに手数料を加算（停止・削除済みの場合はロールバック）
+      const feeUpdateRes = await client.query(
+        'UPDATE server_accounts SET balance = balance + $1 WHERE id = $2 AND is_active = TRUE',
         [feeBig.toString(), recipientAccountId]
       );
+      if (feeUpdateRes.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(503).json({ success: false, error: 'ギフト作成が一時的に利用できません（手数料先が無効）' });
+      }
 
       await client.query('COMMIT');
 

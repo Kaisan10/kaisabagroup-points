@@ -6,7 +6,6 @@ const requireAuth = require('../middleware/requireAuth');
 const ServerAccount = require('../models/ServerAccount');
 const PendingTransaction = require('../models/PendingTransaction');
 const { pool } = require('../config/database');
-const User = require('../models/User');
 
 // ─── 全エンドポイントにセッション認証を適用 ──────────────────────────────
 router.use(requireAuth);
@@ -326,9 +325,12 @@ router.post('/service-accounts', async (req, res) => {
       return res.status(400).json({ success: false, error: 'サービスアカウント名は5文字以上の半角英数字と記号のみ使用可能です（スペース不可）' });
     }
 
-    // 既存アカウント数を確認
-    const existing = await ServerAccount.findByOwner(userId);
-    const needsFee = existing.length >= 1;
+    // アクティブな既存アカウント数を確認（論理削除済みは除外）
+    const activeCountRes = await pool.query(
+      'SELECT COUNT(*) AS count FROM server_accounts WHERE owner_user_id = $1 AND is_active = TRUE',
+      [userId]
+    );
+    const needsFee = parseInt(activeCountRes.rows[0].count, 10) >= 1;
 
     if (!needsFee) {
       // 1個目: 無料で作成（ServerAccount.create() 内でもバリデーション・重複チェックあり）
@@ -389,11 +391,17 @@ router.post('/service-accounts', async (req, res) => {
         [userId, (-SERVICE_ACCOUNT_FEE).toString()]
       );
 
-      // 振込先サービスアカウントに加算
-      await client.query(
-        'UPDATE server_accounts SET balance = balance + $1 WHERE id = $2',
+      // 振込先サービスアカウントに加算（停止・削除済みの場合はロールバック）
+      const feeUpdateRes = await client.query(
+        'UPDATE server_accounts SET balance = balance + $1 WHERE id = $2 AND is_active = TRUE',
         [SERVICE_ACCOUNT_FEE.toString(), recipientAccountId]
       );
+      if (feeUpdateRes.rowCount === 0) {
+        throw Object.assign(
+          new Error('サービスアカウントの作成が一時的に利用できません（手数料先が無効）'),
+          { statusCode: 503 }
+        );
+      }
 
       // サービスアカウントを作成（ServerAccount.create() の >=1 制限を迂回してここで直接INSERT）
       const insertRes = await client.query(
@@ -410,7 +418,7 @@ router.post('/service-accounts', async (req, res) => {
     } catch (err) {
       await client.query('ROLLBACK');
       client.release();
-      if (err.statusCode === 402 || err.statusCode === 404) {
+      if (err.statusCode === 402 || err.statusCode === 404 || err.statusCode === 503) {
         return res.status(err.statusCode).json({ success: false, error: err.message });
       }
       throw err;

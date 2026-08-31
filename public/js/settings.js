@@ -205,8 +205,8 @@
     $('sa-name-input').value = '';
     hideAlert($('create-sa-msg'));
 
-    // 2個目以降なら手数料関連UIを表示
-    const needsFee = myServers.length >= 1;
+    // 2個目以降なら手数料関連UIを表示（アクティブなアカウントのみカウント）
+    const needsFee = myServers.filter(s => s.is_active).length >= 1;
     const feeNotice  = $('sa-fee-notice');
     const feeConfirm = $('sa-fee-confirm');
     const submitBtn  = $('create-sa-submit');
@@ -229,7 +229,7 @@
     if (!name) { showAlert(msg, 'error', '名前を入力してください'); return; }
 
     const btn = $('create-sa-submit');
-    const needsFee = myServers.length >= 1;
+    const needsFee = myServers.filter(s => s.is_active).length >= 1;
 
     // 2個目以降: まず確認ステップを挟む
     if (needsFee && btn.dataset.feeConfirmed !== 'true') {
