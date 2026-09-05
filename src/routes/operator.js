@@ -5,6 +5,7 @@ const router = express.Router();
 const requireAuth = require('../middleware/requireAuth');
 const ServerAccount = require('../models/ServerAccount');
 const PendingTransaction = require('../models/PendingTransaction');
+const { pool } = require('../config/database');
 
 // ─── 全エンドポイントにセッション認証を適用 ──────────────────────────────
 router.use(requireAuth);
@@ -307,25 +308,130 @@ router.delete('/products/:id', async (req, res) => {
 
 // ─── POST /api/operator/service-accounts ──────────────────────────────────
 // WebUIからサービスアカウントを作成する
+// 2個目以降は50ptの手数料が必要（振込先: SERVICE_ACCOUNT_FEE_RECIPIENT のサービスアカウント）
 // Body: { name }
+const SERVICE_ACCOUNT_FEE = 50n;
+
 router.post('/service-accounts', async (req, res) => {
   try {
     const { name } = req.body;
-    const { account, plainApiKey } = await ServerAccount.create({
-      name,
-      ownerUserId: req.session.user.id,
-    });
+    const userId = req.session.user.id;
+
+    // name バリデーション（先にチェック）
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return res.status(400).json({ success: false, error: 'name is required' });
+    }
+    if (name.length < 5 || !/^[\x21-\x7E]+$/.test(name)) {
+      return res.status(400).json({ success: false, error: 'サービスアカウント名は5文字以上の半角英数字と記号のみ使用可能です（スペース不可）' });
+    }
+
+    // アクティブな既存アカウント数を確認（論理削除済みは除外）
+    const activeCountRes = await pool.query(
+      'SELECT COUNT(*) AS count FROM server_accounts WHERE owner_user_id = $1 AND is_active = TRUE',
+      [userId]
+    );
+    const needsFee = parseInt(activeCountRes.rows[0].count, 10) >= 1;
+
+    if (!needsFee) {
+      // 1個目: 無料で作成（ServerAccount.create() 内でもバリデーション・重複チェックあり）
+      const { account, plainApiKey } = await ServerAccount.create({ name, ownerUserId: userId });
+      return res.status(201).json({ success: true, data: { account, api_key: plainApiKey } });
+    }
+
+    // 2個目以降: 振込先サービスアカウントを確認してから 50pt 手数料を徴収して作成
+    const feeRecipientName = process.env.SERVICE_ACCOUNT_FEE_RECIPIENT;
+    if (!feeRecipientName) {
+      return res.status(503).json({ success: false, error: 'サービスアカウントの作成が一時的に利用できません（設定不備）' });
+    }
+
+    // 振込先サービスアカウントをDBから取得
+    const recipientRes = await pool.query(
+      'SELECT id FROM server_accounts WHERE name = $1 AND is_active = TRUE LIMIT 1',
+      [feeRecipientName]
+    );
+    if (recipientRes.rows.length === 0) {
+      return res.status(503).json({ success: false, error: 'サービスアカウントの作成が一時的に利用できません（設定不備）' });
+    }
+    const recipientAccountId = recipientRes.rows[0].id;
+
+    // 残高チェック・手数料振込・アカウント作成を1トランザクションでアトミックに実行
+    const { generateApiKey, hashApiKey, keyPrefix } = require('../utils/apiKey');
+    const plainKey = generateApiKey();
+    const keyHash  = hashApiKey(plainKey);
+    const prefix   = keyPrefix(plainKey);
+
+    const client = await pool.connect();
+    let newAccount;
+    try {
+      await client.query('BEGIN');
+
+      // ユーザー残高をFOR UPDATEで取得
+      const userRes = await client.query(
+        'SELECT total_points FROM users WHERE id = $1 FOR UPDATE',
+        [userId]
+      );
+      if (userRes.rows.length === 0) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+
+      const currentPoints = BigInt(userRes.rows[0].total_points);
+      if (currentPoints < SERVICE_ACCOUNT_FEE) {
+        throw Object.assign(
+          new Error(`ポイントが不足しています（必要: ${SERVICE_ACCOUNT_FEE}pt、残高: ${currentPoints}pt）`),
+          { statusCode: 402 }
+        );
+      }
+
+      // ユーザーからポイントを引く
+      await client.query(
+        'UPDATE users SET total_points = total_points - $1 WHERE id = $2',
+        [SERVICE_ACCOUNT_FEE.toString(), userId]
+      );
+      await client.query(
+        `INSERT INTO point_transactions (user_id, amount, transaction_type, description)
+         VALUES ($1, $2, 'service_account_fee', 'サービスアカウント作成手数料')`,
+        [userId, (-SERVICE_ACCOUNT_FEE).toString()]
+      );
+
+      // 振込先サービスアカウントに加算（停止・削除済みの場合はロールバック）
+      const feeUpdateRes = await client.query(
+        'UPDATE server_accounts SET balance = balance + $1 WHERE id = $2 AND is_active = TRUE',
+        [SERVICE_ACCOUNT_FEE.toString(), recipientAccountId]
+      );
+      if (feeUpdateRes.rowCount === 0) {
+        throw Object.assign(
+          new Error('サービスアカウントの作成が一時的に利用できません（手数料先が無効）'),
+          { statusCode: 503 }
+        );
+      }
+
+      // サービスアカウントを作成（ServerAccount.create() の >=1 制限を迂回してここで直接INSERT）
+      const insertRes = await client.query(
+        `INSERT INTO server_accounts
+           (name, api_key_hash, api_key_prefix, owner_user_id, webhook_url, redirect_uris)
+         VALUES ($1, $2, $3, $4, NULL, NULL)
+         RETURNING id, name, api_key_prefix, owner_user_id, balance,
+                   webhook_url, redirect_uris, seller_approval, created_at, is_active`,
+        [name.trim(), keyHash, prefix, userId]
+      );
+      newAccount = insertRes.rows[0];
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      client.release();
+      if (err.statusCode === 402 || err.statusCode === 404 || err.statusCode === 503) {
+        return res.status(err.statusCode).json({ success: false, error: err.message });
+      }
+      throw err;
+    }
+    client.release();
+
+    console.log(`✅ サービスアカウント作成（有料）: user=${req.session.user.username} fee=${SERVICE_ACCOUNT_FEE}pt → ${feeRecipientName}`);
     return res.status(201).json({
       success: true,
-      data: {
-        account,
-        api_key: plainApiKey,
-      }
+      data: { account: newAccount, api_key: plainKey },
+      fee_paid: Number(SERVICE_ACCOUNT_FEE),
     });
   } catch (err) {
-    if (err.message.includes('1人1つまで')) {
-      return res.status(409).json({ success: false, error: err.message });
-    }
     return handleError(res, err);
   }
 });

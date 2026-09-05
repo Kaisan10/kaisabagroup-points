@@ -72,11 +72,10 @@
     const listEl = $('servers-list');
     if (!listEl) return;
 
-    // 作成ボタンの表示制御
+    // 作成ボタンは常に表示（2個目以降は50pt手数料あり）
     const createBtn = $('create-service-account-btn');
     if (createBtn) {
-      const activeCount = myServers.filter(s => s.is_active).length;
-      createBtn.style.display = activeCount > 0 ? 'none' : 'inline-block';
+      createBtn.style.display = 'inline-block';
     }
 
     if (myServers.length === 0) {
@@ -205,6 +204,17 @@
   $('create-service-account-btn')?.addEventListener('click', () => {
     $('sa-name-input').value = '';
     hideAlert($('create-sa-msg'));
+
+    // 2個目以降なら手数料関連UIを表示（アクティブなアカウントのみカウント）
+    const needsFee = myServers.filter(s => s.is_active).length >= 1;
+    const feeNotice  = $('sa-fee-notice');
+    const feeConfirm = $('sa-fee-confirm');
+    const submitBtn  = $('create-sa-submit');
+    if (feeNotice)  feeNotice.style.display  = needsFee ? '' : 'none';
+    if (feeConfirm) feeConfirm.style.display = 'none'; // 最初は非表示
+    if (submitBtn)  submitBtn.textContent = needsFee ? '次へ' : '作成';
+    submitBtn.dataset.feeConfirmed = 'false';
+
     createModal.classList.add('is-open');
   });
 
@@ -212,13 +222,24 @@
     createModal.classList.remove('is-open');
   });
 
-    $('create-sa-submit')?.addEventListener('click', async () => {
+  $('create-sa-submit')?.addEventListener('click', async () => {
     const name = $('sa-name-input').value.trim();
     const msg = $('create-sa-msg');
     hideAlert(msg);
     if (!name) { showAlert(msg, 'error', '名前を入力してください'); return; }
 
     const btn = $('create-sa-submit');
+    const needsFee = myServers.filter(s => s.is_active).length >= 1;
+
+    // 2個目以降: まず確認ステップを挟む
+    if (needsFee && btn.dataset.feeConfirmed !== 'true') {
+      const feeConfirm = $('sa-fee-confirm');
+      if (feeConfirm) feeConfirm.style.display = '';
+      btn.textContent = '50ptを支払って作成';
+      btn.dataset.feeConfirmed = 'true';
+      return;
+    }
+
     btn.disabled = true;
     try {
       const res = await fetch('/api/operator/service-accounts', {

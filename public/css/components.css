@@ -184,10 +184,6 @@ main.page-container.is-loading {
   pointer-events: none;
 }
 
-.page-transition-fade {
-  animation: fadeIn 0.4s ease-out;
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -198,6 +194,11 @@ main.page-container.is-loading {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ビューポート内に入ったカードだけアニメーション (Intersection Observer と連携) */
+.card--animate-in {
+  animation: fadeIn 0.4s ease-out both;
 }
 
 /* ── ランキング ───────────────────────────────────────────────── */
