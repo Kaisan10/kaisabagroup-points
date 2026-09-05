@@ -613,4 +613,139 @@ async function initDatabase() {
   }
 }
 
-module.exports = { pool, initDatabase };
+/**
+ * SCHEMA — データベーススキーマの宣言的定義
+ *
+ * このオブジェクトが migration テストの唯一の情報源になる。
+ * カラムを追加したら、上の SQL と ここの両方を更新する。
+ * SQL だけ or SCHEMA だけ更新した場合はテストが失敗して気づける。
+ *
+ * 各テーブルに定義できるプロパティ:
+ *   columns     : 存在するはずのカラム名の配列
+ *   bigintCols  : bigint 型でなければならないカラム名の配列
+ *   nullableCols: nullable でなければならないカラム名の配列
+ *   constraints : 存在するはずの pg 制約名の配列
+ */
+const SCHEMA = {
+  users: {
+    columns: [
+      'id', 'discourse_id', 'username', 'email', 'avatar_url',
+      'minecraft_id', 'total_points', 'is_suspended', 'is_admin',
+      'created_at', 'last_login', 'ranking_opt_in', 'trusted_auto_approve',
+    ],
+    bigintCols:   ['total_points'],
+    nullableCols:  [],
+    constraints:  ['users_username_key'],
+  },
+  point_transactions: {
+    columns: [
+      'id', 'user_id', 'amount', 'transaction_type', 'reference_id',
+      'description', 'created_at',
+      'sender_type', 'sender_id', 'receiver_type', 'receiver_id', 'pending_tx_id',
+    ],
+    bigintCols:   ['amount'],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  minecraft_link_tokens: {
+    columns: ['id', 'user_id', 'token', 'minecraft_username', 'expires_at', 'used', 'created_at'],
+    bigintCols:   [],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  redeem_code_uses: {
+    columns: ['id', 'user_id', 'code', 'points_awarded', 'created_at'],
+    bigintCols:   ['points_awarded'],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  session: {
+    columns: ['sid', 'sess', 'expire'],
+    bigintCols:   [],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  server_accounts: {
+    columns: [
+      'id', 'name', 'api_key_hash', 'api_key_prefix', 'owner_user_id',
+      'balance', 'webhook_url', 'seller_approval', 'created_at',
+      'is_active', 'is_trusted', 'allowed_ips', 'tx_limit', 'redirect_uris',
+    ],
+    bigintCols:   ['balance', 'tx_limit'],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  server_products: {
+    columns: ['id', 'server_product_id', 'server_id', 'name', 'price', 'description', 'is_active', 'created_at'],
+    bigintCols:   ['price'],
+    nullableCols:  [],
+    constraints:  ['uq_server_product_id'],
+  },
+  pending_transactions: {
+    columns: [
+      'id', 'tx_token', 'server_id', 'buyer_user_id', 'product_id',
+      'amount', 'item_name', 'status', 'buyer_confirm_code',
+      'buyer_approved_at', 'seller_approved_at', 'rejected_by', 'expires_at',
+      'created_at', 'recipient_user_id',
+    ],
+    bigintCols:   ['amount'],
+    nullableCols:  ['server_id', 'buyer_confirm_code'], // DROP NOT NULL 済み
+    constraints:  [],
+  },
+  server_registration_tokens: {
+    columns: ['id', 'token', 'server_name', 'status', 'created_at', 'expires_at'],
+    bigintCols:   [],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  reports: {
+    columns: ['id', 'reporter_id', 'category', 'description', 'is_dismissed', 'created_at'],
+    bigintCols:   [],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  subscriptions: {
+    columns: [
+      'id', 'server_id', 'user_id', 'product_id', 'amount',
+      'interval_days', 'next_charge_at', 'status', 'created_at',
+    ],
+    bigintCols:   ['amount'],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  user_trusted_servers: {
+    columns: ['id', 'user_id', 'server_id', 'delegate_allowed', 'auto_approve', 'created_at'],
+    bigintCols:   [],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  gift_codes: {
+    columns: [
+      'id', 'code', 'creator_user_id', 'points', 'title',
+      'memo', 'is_used', 'used_by_user_id', 'created_at', 'used_at',
+    ],
+    bigintCols:   ['points'],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  oauth_auth_codes: {
+    columns: ['id', 'code', 'server_id', 'user_id', 'scopes', 'redirect_uri', 'expires_at', 'used', 'created_at'],
+    bigintCols:   [],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  oauth_access_tokens: {
+    columns: ['id', 'token_hash', 'token_prefix', 'server_id', 'user_id', 'scopes', 'expires_at', 'revoked', 'created_at'],
+    bigintCols:   [],
+    nullableCols:  [],
+    constraints:  [],
+  },
+  oauth_refresh_tokens: {
+    columns: ['id', 'token_hash', 'token_prefix', 'server_id', 'user_id', 'scopes', 'expires_at', 'revoked', 'used', 'created_at'],
+    bigintCols:   [],
+    nullableCols:  [],
+    constraints:  [],
+  },
+};
+
+module.exports = { pool, initDatabase, SCHEMA };
