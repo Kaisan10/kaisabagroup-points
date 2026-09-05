@@ -548,11 +548,12 @@ curl -s -X POST https://points.bac0n.f5.si/api/server/tx/initiate \
 
 **リクエスト Body** (JSON):
 
-| フィールド     | 型     | 必須 | 説明                                     |
-| -------------- | ------ | ---- | ---------------------------------------- |
-| `username`     | string | ✅   | 購入者の Discourse ユーザー名            |
-| `product_id`   | number | ✅   | 商品 ID（正の整数）                      |
-| `interval_days`| number | ✅   | 課金間隔（日数、正の整数）               |
+| フィールド      | 型     | 必須 | 説明                                                                                                              |
+| --------------- | ------ | ---- | ----------------------------------------------------------------------------------------------------------------- |
+| `username`      | string | ✅   | 購入者の Discourse ユーザー名                                                                                     |
+| `product_id`    | number | ✅   | 商品 ID（正の整数）                                                                                               |
+| `interval_days` | number | ✅   | 課金間隔（日数、正の整数）                                                                                        |
+| `return_url`    | string | ❌   | 承認後にリダイレクトする URL（`http://` / `https://` のみ許可）。指定すると `web_url` にクエリパラメータとして埋め込まれます |
 
 **レスポンス** (201):
 ```json
@@ -565,10 +566,47 @@ curl -s -X POST https://points.bac0n.f5.si/api/server/tx/initiate \
     "amount": 1000,
     "interval_days": 30,
     "status": "pending_user",
-    "web_url": "https://points.bac0n.f5.si/dashboard",
-    "message": "ダッシュボードからユーザーの承認を待っています"
+    "web_url": "https://points.bac0n.f5.si/dashboard?return_url=https%3A%2F%2Fyourapp.example.com%2Fcallback&service_name=MyServer",
+    "message": "https://points.bac0n.f5.si/dashboard?... からユーザーの承認を待っています"
   }
 }
+```
+
+> `return_url` を省略した場合、`web_url` は `https://points.bac0n.f5.si/dashboard` になります。
+
+**`web_url` の動作**:
+- ユーザーが `web_url` を開くと、ポイントダッシュボードに承認バナーが表示されます
+- `service_name` パラメータが含まれる場合、バナーにそのサービス名が表示されます
+- ユーザーが「承認する」を押すと、`return_url` に自動でリダイレクトされます（`return_url` 指定時のみ）
+- `return_url` に戻るタイミングはユーザーの **承認後** です（拒否した場合はリダイレクトしません）
+
+**curl 例**:
+```bash
+curl -s -X POST https://points.bac0n.f5.si/api/server/subscription/initiate \
+  -H 'X-API-Key: <API_KEY>' \
+  -H 'Content-Type: application/json' \
+  -d '{"username": "Player1", "product_id": 1, "interval_days": 30, "return_url": "https://yourapp.example.com/subscribed"}'
+```
+
+**`return_url` を使ったサブスク登録フロー（ウェブアプリ向け）**:
+
+```
+あなたのWebアプリ                  ポイントサーバー              ユーザー（ブラウザ）
+   │                                │                             │
+   │  1. POST /api/server/          │                             │
+   │     subscription/initiate      │                             │
+   │     { return_url: "https://yourapp.example.com/subscribed" } │
+   │ ─────────────────────────────→  │                             │
+   │  ← web_url: /dashboard?return_url=...&service_name=MyServer  │
+   │                                │                             │
+   │  2. ユーザーを web_url へ案内  │                             │
+   │ ─────────────────────────────────────────────────────────→  │
+   │                                │  承認バナーを表示           │
+   │                                │ ←────────────────────────── │
+   │                                │  「承認する」をクリック      │
+   │                                │ ←────────────────────────── │
+   │  3. yourapp.example.com/subscribed へリダイレクト            │
+   │ ←─────────────────────────────────────────────────────────  │
 ```
 
 ---

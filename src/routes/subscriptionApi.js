@@ -38,7 +38,7 @@ function handleError(res, err) {
 // Body: { username: string, product_id: number, interval_days: number }
 router.post('/initiate', async (req, res) => {
   try {
-    const { username, product_id, interval_days } = req.body;
+    const { username, product_id, interval_days, return_url } = req.body;
 
     if (!username || typeof username !== 'string' || username.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'username (string) required' });
@@ -64,6 +64,22 @@ router.post('/initiate', async (req, res) => {
     const siteUrl = process.env.SITE_URL || '';
     console.log(`📋 サブスク登録開始: sub_id=${sub.subscriptionId} user=${sub.username} amount=${sub.amount} interval=${sub.intervalDays}日`);
 
+    // return_url が指定されていれば検証してダッシュボードURLに付加する
+    let dashboardUrl = `${siteUrl}/dashboard`;
+    if (return_url && typeof return_url === 'string') {
+      try {
+        const parsed = new URL(return_url);
+        // http/https のみ許可
+        if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+          const params = new URLSearchParams({
+            return_url:   return_url,
+            service_name: req.serverAccount.name,
+          });
+          dashboardUrl = `${siteUrl}/dashboard?${params.toString()}`;
+        }
+      } catch { /* 不正なURLは無視 */ }
+    }
+
     return res.status(201).json({
       success: true,
       data: {
@@ -73,8 +89,8 @@ router.post('/initiate', async (req, res) => {
         amount:          sub.amount,
         interval_days:   sub.intervalDays,
         status:          sub.status,
-        message:         `${siteUrl}/dashboard からユーザーの承認を待っています`,
-        web_url:         `${siteUrl}/dashboard`,
+        message:         `${dashboardUrl} からユーザーの承認を待っています`,
+        web_url:         dashboardUrl,
       }
     });
   } catch (err) {
